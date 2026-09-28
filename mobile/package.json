@@ -1,0 +1,30 @@
+{
+  "name": "pcas-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Applications Android et iOS de PCAS : coque Capacitor qui charge https://pcas.dembasolution.com",
+  "scripts": {
+    "icones": "capacitor-assets generate --iconBackgroundColor '#2E6E3E' --splashBackgroundColor '#163A27'",
+    "ajouter:android": "cap add android",
+    "ajouter:ios": "cap add ios",
+    "sync": "cap sync",
+    "android": "cap sync android && cap open android",
+    "ios": "cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor-mlkit/barcode-scanning": "^7.0.0",
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/push-notifications": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
+    "@capacitor/splash-screen": "^7.0.0",
+    "@capacitor/status-bar": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0",
+    "typescript": "^5"
+  }
+}

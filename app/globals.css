@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/*
+  Identité PCAS : vert savane (primaire), ocre latérite (accent), jaune mangue (alertes).
+  Barre latérale sombre façon Slack. Trois thèmes : Savane (défaut, clair), Latérite (clair chaud), Nuit (sombre).
+  Les composants n'utilisent que ces jetons sémantiques, jamais de couleur brute.
+*/
+:root {
+  color-scheme: light;
+
+  --background: #F3F2EC;
+  --surface: #FFFFFF;
+  --surface-border: #E1DDD1;
+  --surface-muted: #F8F7F2;
+  --foreground: #13201A;
+  --foreground-muted: #5A665F;
+
+  --sidebar: #163A27;
+  --sidebar-foreground: #E9F1EB;
+  --sidebar-muted: #97B3A1;
+  --sidebar-hover: rgb(255 255 255 / 0.08);
+  --sidebar-border: rgb(255 255 255 / 0.10);
+  --sidebar-actif: #D9822B;
+  --sidebar-actif-foreground: #1B1206;
+
+  --primary: #2E6E3E;
+  --primary-hover: #245732;
+  --primary-foreground: #FFFFFF;
+  --primary-soft: #E3F0E6;
+  --accent: #C4661C;
+  --accent-soft: #FBEBDD;
+
+  --danger: #C53030;
+  --success: #2F855A;
+  --warning: #E0A100;
+  --info: #2B6CB0;
+}
+
+.theme-laterite {
+  --background: #F6EFE7;
+  --surface: #FFFDFA;
+  --surface-border: #E7D9CB;
+  --surface-muted: #FAF4EE;
+  --foreground: #2A1A10;
+  --foreground-muted: #6E5A4B;
+
+  --sidebar: #4E2716;
+  --sidebar-foreground: #F8ECE3;
+  --sidebar-muted: #CFA98F;
+  --sidebar-actif: #F2B33D;
+  --sidebar-actif-foreground: #2A1A10;
+
+  --primary: #A34C1D;
+  --primary-hover: #873E17;
+  --primary-soft: #F7E3D6;
+  --accent: #3F7A45;
+  --accent-soft: #E1EFE2;
+}
+
+.theme-nuit {
+  color-scheme: dark;
+
+  --background: #0E1411;
+  --surface: #161F1A;
+  --surface-border: #26332C;
+  --surface-muted: #1B2620;
+  --foreground: #E4ECE6;
+  --foreground-muted: #93A59A;
+
+  --sidebar: #0A0F0C;
+  --sidebar-foreground: #DCE7E0;
+  --sidebar-muted: #7F958A;
+  --sidebar-border: rgb(255 255 255 / 0.07);
+  --sidebar-actif: #E39A45;
+  --sidebar-actif-foreground: #140C03;
+
+  --primary: #4FAE68;
+  --primary-hover: #63C27C;
+  --primary-foreground: #06120A;
+  --primary-soft: #1D3325;
+  --accent: #E08A3A;
+  --accent-soft: #3A2616;
+
+  --danger: #F07171;
+  --success: #5CC08A;
+  --warning: #F2C14E;
+  --info: #6EA8E6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-border: var(--surface-border);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-actif: var(--sidebar-actif);
+  --color-sidebar-actif-foreground: var(--sidebar-actif-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-outfit);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Cibles tactiles confortables sur mobile et tablette. */
+@media (pointer: coarse) {
+  button, [role="button"], input, select, textarea {
+    min-height: 44px;
+  }
+}
+
+/* Barre de navigation basse (mobile) : respecte la zone de l'indicateur d'accueil de l'iPhone. */
+.pb-securite {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Impression (A4) : seul le contenu de la page est imprimé, sans menus ni boutons. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  aside, header, nav, button, select, textarea, input[type="file"], summary,
+  form[method="get"], [role="status"], .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+  table {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 10.5px !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr, .break-inside-avoid {
+    break-inside: avoid;
+  }
+  * {
+    box-shadow: none !important;
+  }
+}

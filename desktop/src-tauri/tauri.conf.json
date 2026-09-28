@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PCAS",
+  "version": "1.0.0",
+  "identifier": "com.dembasolution.pcas",
+  "build": {
+    "frontendDist": "https://pcas.dembasolution.com",
+    "devUrl": "http://localhost:3000"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "msi", "nsis"],
+    "category": "Business",
+    "shortDescription": "Plateforme de Commercialisation Agricole du Sénégal",
+    "longDescription": "PCAS relie les producteurs agricoles du Sénégal et leurs clients : offres, commandes, livraisons, factures et paiements, avec des documents vérifiables par QR code.",
+    "copyright": "© DembaSolution",
+    "publisher": "DembaSolution",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "dmg": {
+        "windowSize": { "width": 660, "height": 400 }
+      }
+    },
+    "windows": {
+      "wix": { "language": "fr-FR" },
+      "nsis": { "languages": ["French"], "displayLanguageSelector": false }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "pcas-bureau",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application de bureau PCAS (Mac, Windows) : coque Tauri qui charge https://pcas.dembasolution.com",
+  "scripts": {
+    "icones": "tauri icon ../mobile/assets/icon-only.png",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:mac": "tauri build --target universal-apple-darwin",
+    "build:windows": "tauri build --target x86_64-pc-windows-msvc"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

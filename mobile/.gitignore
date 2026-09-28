@@ -1,0 +1,12 @@
+node_modules
+# Projets natifs générés par « cap add » : versionnez-les une fois configurés (Firebase, signature), sauf les builds
+android/app/build
+android/.gradle
+android/local.properties
+ios/App/Pods
+ios/App/build
+ios/DerivedData
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
