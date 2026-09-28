@@ -1,4 +1,4 @@
-// Génère la migration des contrats d'engagement à partir du texte de référence ../pcas_contrats_engagement.md,
+// Génère la migration des contrats d'engagement à partir du texte de référence docs/contrats-engagement.md,
 // pour que le texte publié soit exactement celui qui a été relu.
 //
 //   node scripts/generer-contrats-sql.mjs 1.0 supabase/migrations/02_contrats_v1.sql
@@ -13,7 +13,7 @@ if (!version || !sortie) {
   console.error('Usage : node scripts/generer-contrats-sql.mjs <version> <fichier.sql>')
   process.exitCode = 1
 } else {
-  const source = readFileSync(new URL('../../pcas_contrats_engagement.md', import.meta.url), 'utf8').replace(/\r/g, '')
+  const source = readFileSync(new URL('../docs/contrats-engagement.md', import.meta.url), 'utf8').replace(/\r/g, '')
 
   const extraire = (titre, role) => {
     const debut = source.indexOf(`## ${titre}`)

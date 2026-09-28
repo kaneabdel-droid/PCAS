@@ -1,6 +1,6 @@
 # PCAS — Plateforme de Commercialisation Agricole du Sénégal
 
-Produit DembaSolution. Plan complet : [`../implementation_plan_pcas.md`](../implementation_plan_pcas.md) ; contrats d'engagement : [`../pcas_contrats_engagement.md`](../pcas_contrats_engagement.md).
+Produit DembaSolution. Plan complet : [`docs/plan-implementation.md`](docs/plan-implementation.md) ; contrats d'engagement : [`docs/contrats-engagement.md`](docs/contrats-engagement.md).
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Supabase (PostgreSQL, Auth, Storage). Interface en français uniquement, devise FCFA (XOF), mode toujours connecté.
 
