@@ -3,8 +3,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { fetchAvecDelai } from '@/utils/supabase/fetch'
 
 // Pages accessibles sans connexion : connexion et mot de passe, demande d'accès, retour des liens d'invitation,
-// vérification publique des documents par QR code (/v/…), routes serveur-à-serveur (tâches planifiées, protégées par leur secret).
-const PUBLIC_PREFIXES = ['/login', '/mot-de-passe-oublie', '/demande-acces', '/verifier', '/hors-ligne', '/guide', '/auth', '/v/', '/api/cron']
+// vérification publique des documents par QR code (/v/…), routes serveur-à-serveur (tâches planifiées, protégées par leur secret),
+// choix d'un compte de démonstration (/demo : page introuvable hors du déploiement de démonstration).
+const PUBLIC_PREFIXES = ['/login', '/mot-de-passe-oublie', '/demande-acces', '/verifier', '/hors-ligne', '/guide', '/auth', '/v/', '/api/cron', '/demo']
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })

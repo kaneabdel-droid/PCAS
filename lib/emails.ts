@@ -38,6 +38,11 @@ export async function envoyerNotificationsParEmail(supabase: SupabaseClient, lim
     .limit(limite)
   let envoyes = 0
   for (const n of data ?? []) {
+    // Domaine réservé .test (comptes de démonstration) : jamais envoyé, pour ne pas nuire à la réputation du domaine d'envoi.
+    if (n.email.toLowerCase().endsWith('.test')) {
+      await supabase.from('notifications').update({ email_envoye_le: new Date().toISOString() }).eq('id', n.id)
+      continue
+    }
     try {
       const reponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',

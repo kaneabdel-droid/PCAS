@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { FileSignature } from 'lucide-react'
+import { FileSignature, FlaskConical } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { EnregistrementPush } from '@/components/natif/EnregistrementPush'
+import { demoActive } from '@/lib/demo'
 import { getContexte } from '@/lib/session'
 import { LIBELLES_ROLES } from '@/lib/roles'
 import { createClient } from '@/utils/supabase/server'
@@ -35,6 +36,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       nonLues={nonLues ?? 0}
     >
       <EnregistrementPush />
+      {demoActive() && (
+        <div className="no-print mb-6 flex flex-col gap-2 rounded-xl border border-info/40 bg-info/10 px-4 py-3 text-sm sm:flex-row sm:items-center">
+          <FlaskConical className="h-5 w-5 shrink-0 text-info" aria-hidden />
+          <p className="flex-1">
+            <strong>Démonstration</strong> — données fictives, partagées entre les visiteurs. Vous êtes {ctx.nomComplet}
+            {ctx.entrepriseNom ? ` (${ctx.entrepriseNom})` : ''}.
+          </p>
+          <Link href="/demo" className="font-medium text-primary hover:underline">
+            Changer de rôle
+          </Link>
+        </div>
+      )}
       {contratAAccepter && (
         <div className="no-print mb-6 flex flex-col gap-3 rounded-xl border border-warning/50 bg-warning/10 p-4 sm:flex-row sm:items-center">
           <FileSignature className="h-6 w-6 shrink-0 text-warning" aria-hidden />

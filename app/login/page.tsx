@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { EcranAuth } from '@/components/EcranAuth'
+import { demoActive } from '@/lib/demo'
 import { FormulaireAuth } from '@/components/FormulaireAuth'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +20,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { erreur } = await searchParams
   return (
     <EcranAuth titre="Connexion" sousTitre="Accédez à votre espace PCAS.">
+      {demoActive() && (
+        <Link
+          href="/demo"
+          className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary-soft p-3 text-sm font-medium text-foreground hover:border-primary"
+        >
+          Découvrir la démonstration : entrer en un clic avec un producteur, un client, une banque ou le superviseur
+          <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+        </Link>
+      )}
       {erreur && ERREURS[erreur] && (
         <p className="mb-6 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">{ERREURS[erreur]}</p>
       )}

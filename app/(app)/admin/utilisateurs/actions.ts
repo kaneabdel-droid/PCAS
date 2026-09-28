@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { estAdmin } from '@/lib/admin'
+import { demoActive, MESSAGE_DEMO } from '@/lib/demo'
 import { coche, messageErreur, requis, texte, type Resultat } from '@/lib/formulaire'
 import { ROLES_PLATEFORME, estRoleBase } from '@/lib/roles'
 import { getContexte } from '@/lib/session'
@@ -23,6 +24,7 @@ function rafraichir(entrepriseId?: string | null) {
  */
 export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
+  if (demoActive()) return { error: MESSAGE_DEMO }
   const email = requis(fd, 'email').toLowerCase()
   const nomComplet = requis(fd, 'nom_complet')
   const role = requis(fd, 'role_base')
@@ -68,6 +70,7 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
 
 export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
+  if (demoActive()) return { error: MESSAGE_DEMO }
   const id = requis(fd, 'utilisateur_id')
   const nomComplet = requis(fd, 'nom_complet')
   const role = requis(fd, 'role_base')
@@ -103,6 +106,7 @@ export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
 
 export async function changerEtatUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
+  if (demoActive()) return { error: MESSAGE_DEMO }
   const id = requis(fd, 'utilisateur_id')
   const actif = requis(fd, 'actif') === 'true'
   const ctx = await getContexte()
@@ -118,6 +122,7 @@ export async function changerEtatUtilisateur(fd: FormData): Promise<Resultat> {
 /** Renvoie l'invitation (compte jamais activé) ou un lien de réinitialisation du mot de passe (compte déjà utilisé). */
 export async function renvoyerLien(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
+  if (demoActive()) return { error: MESSAGE_DEMO }
   const id = requis(fd, 'utilisateur_id')
   const admin = createAdminClient()
   const { data, error } = await admin.auth.admin.getUserById(id)
@@ -140,6 +145,7 @@ export async function renvoyerLien(fd: FormData): Promise<Resultat> {
 
 export async function supprimerUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
+  if (demoActive()) return { error: MESSAGE_DEMO }
   const id = requis(fd, 'utilisateur_id')
   const ctx = await getContexte()
   if (id === ctx.userId) return { error: 'Vous ne pouvez pas supprimer votre propre compte.' }

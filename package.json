@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "creer-admin": "node --env-file=.env.local scripts/creer-admin.mjs",
-    "recette": "node --env-file=.env.local scripts/recette.mjs"
+    "recette": "node --env-file=.env.local scripts/recette.mjs",
+    "demo": "node --env-file=.env.local scripts/demo.mjs"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
