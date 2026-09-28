@@ -1,0 +1,4 @@
+# Seule l'application web Next.js (racine du dépôt) est déployée sur Vercel.
+# Les coques natives se compilent à part (voir docs/applications.md).
+desktop/
+mobile/
