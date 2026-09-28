@@ -6,23 +6,25 @@
 // Chaque exécution efface d'abord les données des entreprises de démonstration (et de l'ancienne recette), puis
 // reconstruit tout : la démonstration repart toujours du même état, avec des dates relatives au jour d'exécution.
 //
-// Garde-fous : DEMO_ACTIVE=oui et DEMO_MOT_DE_PASSE (10 caractères au moins) doivent être définis dans .env.local.
+// Garde-fou : refusé si DEMO_ACTIVE=non (démonstration coupée sur ce projet).
 // Chaque étape passe par les fonctions de la base avec le compte de l'acteur concerné, comme dans l'application.
 import { createClient } from '@supabase/supabase-js'
+import { randomBytes } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 
 const DEMO = JSON.parse(readFileSync(new URL('../lib/demo-comptes.json', import.meta.url), 'utf8'))
 const URL_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL
 const CLE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const CLE_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY
-const MOT_DE_PASSE = process.env.DEMO_MOT_DE_PASSE
+// Mot de passe aléatoire à chaque exécution, jamais affiché : les visiteurs entrent par /decouvrir-pcas (lien à usage unique).
+const MOT_DE_PASSE = `Demo-${randomBytes(18).toString('base64url')}`
 
-if (process.env.DEMO_ACTIVE !== 'oui') {
-  console.error('Refusé : DEMO_ACTIVE=oui doit être défini (projet de démonstration uniquement, jamais la production).')
+if (process.env.DEMO_ACTIVE === 'non') {
+  console.error('Refusé : la démonstration est coupée sur ce projet (DEMO_ACTIVE=non).')
   process.exit(1)
 }
-if (!URL_SUPABASE || !CLE_ANON || !CLE_SERVICE || !MOT_DE_PASSE || MOT_DE_PASSE.length < 10) {
-  console.error('Variables manquantes : NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, DEMO_MOT_DE_PASSE (10 caractères au moins).')
+if (!URL_SUPABASE || !CLE_ANON || !CLE_SERVICE) {
+  console.error('Variables manquantes : NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.')
   process.exit(1)
 }
 
@@ -533,7 +535,7 @@ async function principal() {
   })
   log('Une demande d’accès en attente pour l’administrateur')
 
-  console.log(`\nDémonstration prête (${etapes} opérations). Connexion en un clic sur /demo quand DEMO_ACTIVE=oui.`)
+  console.log(`\nDémonstration prête (${etapes} opérations). Connexion en un clic sur /decouvrir-pcas.`)
 }
 
 principal().catch((erreur) => {

@@ -51,12 +51,11 @@ Check-list pour passer de l'environnement de développement actuel à `https://p
 - [ ] Catalogue produits et rendements vérifiés (Administration › Catalogue produits).
 - [ ] Applications mobiles et de bureau : voir [`applications.md`](applications.md).
 
-## 5. Déploiement de démonstration
+## 5. Démonstration
 
-Une démonstration publique, séparée de la production, avec tous les acteurs et tous les cas du circuit.
+Tous les acteurs et tous les cas du circuit, sur des entreprises fictives, accessibles en un clic depuis `/decouvrir-pcas` (lien « Découvrir PCAS » de dembasolution.com), comme pour SIGGIE et D-QUINCA.
 
-- [ ] **Base** : un projet Supabase distinct de la production (par exemple le projet de développement actuel), migrations `00` à `12` appliquées.
-- [ ] **Données** : dans `.env.local` pointant vers ce projet, ajoutez `DEMO_ACTIVE=oui` et `DEMO_MOT_DE_PASSE=<10 caractères au moins>`, puis `npm run demo`. Le script efface les données des entreprises de démonstration et reconstruit tout (13 comptes `@pcas.test`, 10 entreprises fictives, une commande à chaque statut). Relancez-le pour remettre la démonstration à zéro ; les dates sont recalculées à partir du jour d'exécution.
-- [ ] **Vercel** : un second projet sur le même dépôt (par exemple `demo-pcas.dembasolution.com`), avec les variables de ce projet Supabase, `NEXT_PUBLIC_SITE_URL` sur son domaine, `DEMO_ACTIVE=oui` et le même `DEMO_MOT_DE_PASSE`. Ne renseignez pas `RESEND_API_KEY` : de toute façon, les adresses `.test` ne reçoivent jamais d'email.
-- [ ] **Production** : `DEMO_ACTIVE` n'y est **jamais** défini ; `/demo` y répond alors « page introuvable ».
-- [ ] Sur la démonstration, l'administrateur ne peut ni inviter, ni modifier, désactiver ou supprimer un compte, ni suspendre une entreprise, et le mot de passe des comptes de démonstration ne se change pas : ces opérations enverraient des emails ou bloqueraient les autres visiteurs.
+- [ ] **Données** : `npm run demo` sur le projet Supabase visé. Le script efface les données des entreprises de démonstration et reconstruit tout (13 comptes `@pcas.test`, 10 entreprises fictives, une commande à chaque statut). Relancez-le pour remettre la démonstration à zéro ; les dates sont recalculées à partir du jour d'exécution.
+- [ ] **Connexion** : chaque clic génère côté serveur un lien de connexion à usage unique (clé service-role) ; aucun mot de passe n'est connu ni transmis. Les adresses `.test` ne reçoivent jamais d'email.
+- [ ] **Garde-fous** : connecté avec un compte de démonstration, on ne peut ni inviter, modifier, désactiver ou supprimer un compte, ni suspendre une entreprise, ni changer de mot de passe.
+- [ ] **Avant l'arrivée de vraies entreprises** : les comptes superviseur et administrateur de démonstration voient toutes les données de la base. Soit `DEMO_ACTIVE=non` sur Vercel (la page de découverte reste, sans connexion) et suppression des données de démonstration, soit une démonstration déplacée sur un second projet Vercel relié à un projet Supabase distinct.

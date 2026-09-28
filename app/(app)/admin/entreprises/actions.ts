@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { estAdmin } from '@/lib/admin'
-import { demoActive, MESSAGE_DEMO } from '@/lib/demo'
+import { refusDemo } from '@/lib/demo'
+import { getContexte } from '@/lib/session'
 import { lireFiche } from '@/lib/fiche'
 import { messageErreur, requis, type Resultat } from '@/lib/formulaire'
 import { LIBELLES_TYPES_ENTREPRISE } from '@/lib/roles'
@@ -39,7 +40,8 @@ export async function creerEntreprise(fd: FormData): Promise<Resultat> {
 
 export async function changerStatutEntreprise(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
-  if (demoActive()) return { error: MESSAGE_DEMO }
+  const refusD = refusDemo((await getContexte()).email)
+  if (refusD) return { error: refusD }
   const id = requis(fd, 'entreprise_id')
   const statut = requis(fd, 'statut')
   if (statut !== 'actif' && statut !== 'suspendu') return { error: 'Statut inconnu.' }
@@ -63,7 +65,8 @@ export async function changerStatutEntreprise(fd: FormData): Promise<Resultat> {
  */
 export async function supprimerEntreprise(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
-  if (demoActive()) return { error: MESSAGE_DEMO }
+  const refusD = refusDemo((await getContexte()).email)
+  if (refusD) return { error: refusD }
   const id = requis(fd, 'entreprise_id')
   const supabase = await createClient()
   const { data: entreprise } = await supabase.from('entreprises').select('denomination').eq('id', id).maybeSingle()

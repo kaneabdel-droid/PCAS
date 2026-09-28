@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { demoActive, estCompteDemo, MESSAGE_DEMO } from '@/lib/demo'
+import { refusDemo } from '@/lib/demo'
 
 type Resultat = { error?: string; success?: string }
 
@@ -44,7 +44,8 @@ export async function definirMotDePasse(formData: FormData): Promise<Resultat> {
   const supabase = await createClient()
   const { data: jeton } = await supabase.auth.getClaims()
   if (!jeton?.claims?.sub) return { error: 'Lien expiré. Demandez un nouveau lien de réinitialisation.' }
-  if (demoActive() && estCompteDemo(jeton.claims.email as string | undefined)) return { error: MESSAGE_DEMO }
+  const refusD = refusDemo(jeton.claims.email as string | undefined)
+  if (refusD) return { error: refusD }
 
   const { error } = await supabase.auth.updateUser({ password: motDePasse })
   if (error) return { error: 'Enregistrement du mot de passe impossible. Réessayez.' }

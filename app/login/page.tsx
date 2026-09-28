@@ -22,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <EcranAuth titre="Connexion" sousTitre="Accédez à votre espace PCAS.">
       {demoActive() && (
         <Link
-          href="/demo"
+          href="/decouvrir-pcas#demo"
           className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary-soft p-3 text-sm font-medium text-foreground hover:border-primary"
         >
           Découvrir la démonstration : entrer en un clic avec un producteur, un client, une banque ou le superviseur
