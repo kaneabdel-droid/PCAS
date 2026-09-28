@@ -55,7 +55,7 @@ async function entreprise(cle) {
   const e = ENTREPRISES[cle]
   const { data: existante } = await service.from('entreprises').select('id').eq('denomination', e.denomination).maybeSingle()
   if (existante) return existante.id
-  return exiger(await service.from('entreprises').insert(e).select('id').single(), `Création ${e.denomination}`).id
+  return exiger(await service.from('entreprises').insert({ ...e, demo: true }).select('id').single(), `Création ${e.denomination}`).id
 }
 
 async function utilisateur(cle, idsEntreprises) {
@@ -76,6 +76,7 @@ async function utilisateur(cle, idsEntreprises) {
       entreprise_id: u.entreprise ? idsEntreprises[u.entreprise] : null,
       signataire: u.role === 'producteur' || u.role === 'client',
       actif: true,
+      demo: true,
     }),
     `Fiche ${u.email}`
   )

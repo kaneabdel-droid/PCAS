@@ -30,7 +30,6 @@ if (!URL_SUPABASE || !CLE_ANON || !CLE_SERVICE) {
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } }
 const service = createClient(URL_SUPABASE, CLE_SERVICE, options)
-const anonyme = createClient(URL_SUPABASE, CLE_ANON, options)
 
 let etapes = 0
 function exiger(resultat, libelle) {
@@ -46,9 +45,10 @@ const log = (texte) => console.log(`  ${texte}`)
 // ---------------------------------------------------------------------------
 
 async function reinitialiser() {
-  const noms = [...Object.values(DEMO.entreprises).map((e) => e.denomination), ...DEMO.anciennes_entreprises_recette]
-  const { data: entreprises } = await service.from('entreprises').select('id').in('denomination', noms)
-  const ids = (entreprises ?? []).map((e) => e.id)
+  // Espace de démonstration (indicateur posé par ce script), plus les entreprises de l'ancienne recette.
+  const { data: demo } = await service.from('entreprises').select('id').eq('demo', true)
+  const { data: recette } = await service.from('entreprises').select('id').in('denomination', DEMO.anciennes_entreprises_recette)
+  const ids = [...new Set([...(demo ?? []), ...(recette ?? [])].map((e) => e.id))]
   const { data: utilisateurs } = await service.from('utilisateurs').select('id').like('email', '%@pcas.test')
   const uids = (utilisateurs ?? []).map((u) => u.id)
   if (!ids.length && !uids.length) return
@@ -85,6 +85,7 @@ async function reinitialiser() {
     ['profils', (q) => q.eq('code', 'commercial_producteur')],
     ['demandes_acces', (q) => q.like('email', '%@pcas.test')],
     ['journal_audit', (q) => q.in('entreprise_id', liste(ids))],
+    ['sequences_numerotation', (q) => q.like('type', '%-DEMO')],
   ]
   for (const [table, filtre] of suppressions) exiger(await filtre(service.from(table).delete()), `Suppression ${table}`)
   for (const uid of uids) await service.auth.admin.deleteUser(uid)
@@ -100,7 +101,7 @@ async function creerEntreprises() {
   for (const [cle, e] of Object.entries(DEMO.entreprises)) {
     const { data: existante } = await service.from('entreprises').select('id').eq('denomination', e.denomination).maybeSingle()
     if (existante) throw new Error(`« ${e.denomination} » existe déjà : relancez avec --reinitialiser.`)
-    ids[cle] = exiger(await service.from('entreprises').insert({ ...e, pays: 'SN', type_identifiant: 'NINEA' }).select('id').single(), e.denomination).id
+    ids[cle] = exiger(await service.from('entreprises').insert({ ...e, pays: 'SN', type_identifiant: 'NINEA', demo: true }).select('id').single(), e.denomination).id
   }
   const comptes = [
     ['walo', 'CBAO Groupe Attijariwafa bank', 'Coopérative des Riziculteurs du Walo', 'SN012 01240 00000000010 12'],
@@ -120,6 +121,7 @@ async function creerComptes(ids) {
       .from('profils')
       .upsert({
         code: 'commercial_producteur',
+        demo: true,
         libelle: 'Commercial producteur',
         role_base: 'producteur',
         matrice_permissions: { '/echeances': { modifier: false }, '/offres': { modifier: false }, '/stocks/matieres': { ecrire: false, modifier: false } },
@@ -146,6 +148,7 @@ async function creerComptes(ids) {
         profil_id: c.profil ? profil.id : null,
         signataire: (c.role === 'producteur' || c.role === 'client') && !c.profil,
         actif: true,
+        demo: true,
       }),
       `Fiche ${c.email}`
     )
@@ -524,7 +527,8 @@ async function principal() {
   const commandes = await circuit(c, ids, offres)
   await besoins(c, ids, offres)
   await vieillir(commandes)
-  await anonyme.from('demandes_acces').insert({
+  await service.from('demandes_acces').insert({
+    demo: true,
     type_entreprise: 'producteur',
     denomination: 'GIE des Femmes Transformatrices de Fatick',
     contact_nom: 'Ndèye Diouf',

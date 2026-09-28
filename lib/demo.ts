@@ -3,8 +3,8 @@ import type { RoleBase } from '@/lib/roles'
 
 // Démonstration : connexion en un clic aux comptes fictifs créés par `npm run demo` (page /decouvrir-pcas).
 // Active par défaut, comme pour les autres produits DembaSolution ; DEMO_ACTIVE=non la coupe (page de découverte sans
-// connexion, bandeau masqué). Les comptes superviseur et administrateur de démonstration voient toutes les données de la
-// base : le jour où de vraies entreprises y travaillent, coupez la démonstration ou séparez les projets Supabase.
+// connexion, bandeau masqué). Les comptes de démonstration, superviseur et administrateur compris, sont cantonnés en base
+// à l'espace de démonstration (migration 13_espace_demo) : ils ne voient aucune donnée réelle.
 
 export type CompteDemo = {
   cle: string

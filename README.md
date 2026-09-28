@@ -12,7 +12,9 @@ npm run build      # build de production
 npm run lint       # eslint
 npm run typecheck  # tsc --noEmit
 npm run creer-admin -- admin@exemple.com "Prénom Nom" "MotDePasseSolide"   # premier administrateur (une seule fois)
-npm run recette    # recette de bout en bout sur un projet de test (crée un jeu de démonstration fictif)
+npm run recette    # recette de bout en bout (entreprises « (démo) », dans l'espace de démonstration)
+npm run demo       # (re)construit la démonstration : tous les acteurs, une commande à chaque statut
+npm run verifier-espaces  # prouve que démonstration et données réelles sont étanches
 ```
 
 Documentation : [mise en production](docs/mise-en-production.md) · [applications mobiles et de bureau](docs/applications.md) · [audit de sécurité SQL](supabase/audit/verifications.sql) · guide d'utilisation en ligne sur `/guide`.
@@ -33,6 +35,7 @@ Documentation : [mise en production](docs/mise-en-production.md) · [application
 | `09_notifications` | notifications, rappels planifiés |
 | `10_appareils` | appareils mobiles (notifications push) |
 | `11_correctifs_recette`, `12_correctif_stock` | correctifs trouvés par la recette |
+| `13_espace_demo`, `14_correctif_espace`, `15_correctif_espace_null` | espace de démonstration étanche : indicateur `demo`, politiques RLS restrictives, numérotation `DEMO-` |
 
 ## Mise en route
 
