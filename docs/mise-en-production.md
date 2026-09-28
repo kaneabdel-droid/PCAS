@@ -30,7 +30,7 @@ Check-list pour passer de l'environnement de développement actuel à `https://p
 | `FIREBASE_SERVICE_ACCOUNT` | JSON du compte de service (quand les applications mobiles seront publiées) |
 
 - [ ] **Domaine** : Vercel › Settings › Domains › `pcas.dembasolution.com` ; chez le registraire de `dembasolution.com`, ajoutez l'enregistrement **CNAME** `pcas` → `cname.vercel-dns.com` (Vercel indique la valeur exacte).
-- [ ] **Tâche planifiée** : `vercel.json` l'appelle toutes les heures (réceptions tacites, retards, rappels, emails, push). L'exécution horaire nécessite l'offre **Vercel Pro** ; en offre gratuite, remplacez `"0 * * * *"` par `"0 6 * * *"` (une fois par jour, à 6 h UTC).
+- [ ] **Tâche planifiée** : `vercel.json` l'appelle une fois par jour à 6 h UTC (réceptions tacites, retards, rappels, emails, push), seule fréquence acceptée par l'offre gratuite de Vercel (un déploiement avec une tâche plus fréquente est refusé). Avec l'offre **Vercel Pro**, passez-la toutes les heures (`"0 * * * *"`) pour que la réception tacite et les rappels tombent à l'heure près.
 - [ ] Région : `dub1` (Dublin) dans `vercel.json`, au plus près de l'Afrique de l'Ouest parmi les régions Vercel ; choisissez la même zone pour le projet Supabase.
 
 ## 3. Vérifications après le déploiement
