@@ -47,7 +47,8 @@ requêtes des pages sont déjà lancées en parallèle.
 | P1 | 15 clés étrangères sans index, dont `echeances.facture_id` utilisée à chaque contrôle d'accès aux échéances | 16 index (migration 16) |
 | P2 | Politiques RLS évaluant les fonctions d'identité à chaque ligne | enveloppées dans `(select …)` : une évaluation par requête (16) |
 
-À surveiller : la région du projet Supabase doit être proche de `dub1` (latence mesurée par `/api/sante`).
+Latence Vercel (`dub1`) → Supabase mesurée par `/api/sante` : **45 ms**. La base est proche des fonctions, rien à
+déplacer.
 
 ## 3. Reprise de panne
 
