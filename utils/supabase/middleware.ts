@@ -4,8 +4,9 @@ import { fetchAvecDelai } from '@/utils/supabase/fetch'
 
 // Pages accessibles sans connexion : connexion et mot de passe, demande d'accès, retour des liens d'invitation,
 // vérification publique des documents par QR code (/v/…), routes serveur-à-serveur (tâches planifiées, protégées par leur secret),
-// présentation du produit et connexion en un clic aux comptes de démonstration (/decouvrir-pcas, /demo).
-const PUBLIC_PREFIXES = ['/login', '/mot-de-passe-oublie', '/demande-acces', '/verifier', '/hors-ligne', '/guide', '/auth', '/v/', '/api/cron', '/api/sante', '/demo', '/decouvrir-pcas']
+// présentation du produit et connexion en un clic aux comptes de démonstration (/decouvrir-pcas, /demo),
+// surveillance (/api/sante) et tunnel Sentry des erreurs du navigateur (/monitoring).
+const PUBLIC_PREFIXES = ['/login', '/mot-de-passe-oublie', '/demande-acces', '/verifier', '/hors-ligne', '/guide', '/auth', '/v/', '/api/cron', '/api/sante', '/monitoring', '/demo', '/decouvrir-pcas']
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })

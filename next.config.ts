@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // En-têtes de sécurité appliqués à toutes les réponses.
 // La politique de contenu n'autorise que le site lui-même et Supabase (données, authentification, fichiers : logos, photos).
@@ -44,4 +45,14 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig;
+// Sentry : tunnel /monitoring (les erreurs du navigateur passent par le site, sans toucher à la CSP ni être bloquées par
+// les bloqueurs de publicité) ; source maps envoyées à Sentry seulement si SENTRY_AUTH_TOKEN est défini au build.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT ?? 'pcas',
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  tunnelRoute: '/monitoring',
+  widenClientFileUpload: true,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+});

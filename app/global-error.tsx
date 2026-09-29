@@ -9,6 +9,8 @@ import { useEffect } from 'react'
 export default function ErreurGlobale({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error)
+    // Sentry chargé seulement s'il est configuré (voir instrumentation-client.ts)
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) import('@sentry/nextjs').then((Sentry) => Sentry.captureException(error)).catch(() => undefined)
   }, [error])
 
   return (
