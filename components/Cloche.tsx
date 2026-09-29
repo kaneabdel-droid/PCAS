@@ -16,8 +16,11 @@ export function Cloche({ utilisateurId, nonLues, className }: { utilisateurId: s
 
   useEffect(() => {
     const supabase = createClient()
+    // Nom de canal propre à chaque cloche : le client navigateur est partagé et la page en affiche deux (barre latérale,
+    // barre mobile). Avec un nom commun, la seconde recevait le canal déjà abonné et `.on()` levait une exception qui
+    // faisait tomber toute la page (« This page couldn't load »).
     const canal = supabase
-      .channel(`notifications-${utilisateurId}`)
+      .channel(`notifications-${utilisateurId}-${crypto.randomUUID()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `destinataire_id=eq.${utilisateurId}` },
