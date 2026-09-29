@@ -44,3 +44,21 @@ from public.stocks where quantite_physique < 0 or quantite_reservee < 0 or quant
 select 'Document altéré' as probleme, type || ' ' || numero as objet
 from public.documents d
 where public.empreinte_document(d.type, d.document_id) <> d.empreinte_sha256;
+
+-- 9. Espace de démonstration : utilisateur rangé dans un autre espace que son entreprise (migration 13)
+select 'Utilisateur hors de l''espace de son entreprise' as probleme, u.email as objet
+from public.utilisateurs u join public.entreprises e on e.id = u.entreprise_id
+where u.demo <> e.demo;
+
+-- 10. Espace de démonstration : commande qui mélange démonstration et réel
+select 'Commande entre deux espaces' as probleme, c.numero as objet
+from public.commandes c
+join public.entreprises cl on cl.id = c.client_id
+join public.entreprises pr on pr.id = c.producteur_id
+left join public.entreprises bq on bq.id = c.banque_id
+where cl.demo <> pr.demo or (bq.id is not null and bq.demo <> cl.demo);
+
+-- 11. Numérotation : document de démonstration sans le préfixe DEMO- (ou document réel avec)
+select 'Numéro dans la mauvaise série' as probleme, c.numero as objet
+from public.commandes c join public.entreprises e on e.id = c.client_id
+where (e.demo and c.numero not like 'DEMO-%') or (not e.demo and c.numero like 'DEMO-%');

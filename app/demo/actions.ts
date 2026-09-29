@@ -2,6 +2,7 @@
 
 import { notFound, redirect } from 'next/navigation'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { withRetry } from '@/utils/supabase/retry'
 import { createClient } from '@/utils/supabase/server'
 import { demoActive, estCompteDemo } from '@/lib/demo'
 
@@ -15,7 +16,10 @@ export async function connexionDemo(fd: FormData) {
   if (!estCompteDemo(email)) redirect('/decouvrir-pcas?erreur=1#demo')
 
   const admin = createAdminClient()
-  const { data, error } = await admin.auth.admin.generateLink({ type: 'magiclink', email })
+  const { data, error } = await withRetry(() => admin.auth.admin.generateLink({ type: 'magiclink', email })).catch((e) => ({
+    data: null,
+    error: e as Error,
+  }))
   if (error || !data?.properties?.hashed_token) {
     console.error('Lien de démonstration impossible', error?.message)
     redirect('/decouvrir-pcas?erreur=1#demo')

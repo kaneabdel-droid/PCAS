@@ -54,6 +54,8 @@ async function compteReel(cle, entrepriseId, role) {
 }
 
 async function nettoyer() {
+  await service.from('notifications').delete().eq('titre', `Demande d'accès : Vérification demande ${suffixe}`)
+  await service.from('demandes_acces').delete().eq('email', `verif-espace-demande-${suffixe}@reel.test`)
   const e = crees.entreprises
   if (!e.length && !crees.utilisateurs.length) return
   for (const [table, colonne] of [
@@ -160,6 +162,24 @@ async function principal() {
   // --- Numérotation séparée ----------------------------------------------------
   const { data: numeros } = await service.from('commandes').select('numero, entreprises!commandes_client_id_fkey!inner(demo)').eq('entreprises.demo', true)
   verifier('Commandes de démonstration numérotées DEMO-', (numeros ?? []).length > 0 && numeros.every((c) => c.numero.startsWith('DEMO-')), (numeros ?? []).find((c) => !c.numero.startsWith('DEMO-'))?.numero)
+
+  // --- Formulaire public « Demander un accès » (visiteur non connecté) ---------
+  const visiteur = createClient(URL_SUPABASE, CLE_ANON, options)
+  const erreurs = []
+  for (let i = 0; i < 4; i++) {
+    const { error } = await visiteur.from('demandes_acces').insert({
+      type_entreprise: 'client',
+      denomination: `Vérification demande ${suffixe}`,
+      contact_nom: 'Vérification',
+      telephone: '770000000',
+      email: `verif-espace-demande-${suffixe}@reel.test`,
+    })
+    erreurs.push(error)
+  }
+  verifier('Visiteur : demande d’accès acceptée', !erreurs[0], erreurs[0]?.message)
+  verifier('Visiteur : 4e demande en 24 h refusée (limite de débit)', !erreurs[1] && !erreurs[2] && Boolean(erreurs[3]), erreurs.map((e) => e?.message ?? 'ok').join(' | '))
+  const { data: demande } = await service.from('demandes_acces').select('demo').eq('email', `verif-espace-demande-${suffixe}@reel.test`).limit(1).maybeSingle()
+  verifier('Visiteur : demande rangée dans l’espace réel', demande?.demo === false)
 
   const echecs = resultats.filter((r) => !r).length
   console.log(`\n${resultats.length - echecs}/${resultats.length} vérifications réussies.`)

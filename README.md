@@ -15,9 +15,11 @@ npm run creer-admin -- admin@exemple.com "Prénom Nom" "MotDePasseSolide"   # pr
 npm run recette    # recette de bout en bout (entreprises « (démo) », dans l'espace de démonstration)
 npm run demo       # (re)construit la démonstration : tous les acteurs, une commande à chaque statut
 npm run verifier-espaces  # prouve que démonstration et données réelles sont étanches
+npm run audit:securite    # visiteur anonyme : aucune table lisible, aucune fonction exploitable, en-têtes HTTP
+npm run sauvegarde        # export JSON de toutes les tables et des comptes (dossier sauvegardes/, hors Git)
 ```
 
-Documentation : [mise en production](docs/mise-en-production.md) · [applications mobiles et de bureau](docs/applications.md) · [audit de sécurité SQL](supabase/audit/verifications.sql) · guide d'utilisation en ligne sur `/guide`.
+Documentation : [rapport d’audit](docs/AUDIT.md) · [mise en production](docs/mise-en-production.md) · [applications mobiles et de bureau](docs/applications.md) · [audit de sécurité SQL](supabase/audit/verifications.sql) · guide d'utilisation en ligne sur `/guide`.
 
 ## Migrations
 
@@ -35,7 +37,9 @@ Documentation : [mise en production](docs/mise-en-production.md) · [application
 | `09_notifications` | notifications, rappels planifiés |
 | `10_appareils` | appareils mobiles (notifications push) |
 | `11_correctifs_recette`, `12_correctif_stock` | correctifs trouvés par la recette |
-| `13_espace_demo`, `14_correctif_espace`, `15_correctif_espace_null` | espace de démonstration étanche : indicateur `demo`, politiques RLS restrictives, numérotation `DEMO-` |
+| `13_espace_demo`, `14_correctif_espace`, `15_correctif_espace_null`, `17_correctif_demande_acces` | espace de démonstration étanche : indicateur `demo`, politiques RLS restrictives, numérotation `DEMO-` |
+| `16_audit`, `19_audit_droits` | audit : index, limite de débit des demandes d’accès, logos cloisonnés, politiques RLS optimisées |
+| `18_contrats_v1_1` | contrats d’engagement v1.1 (article 9 : Tribunal de commerce de Dakar ou de Saint-Louis) |
 
 ## Mise en route
 

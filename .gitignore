@@ -6,3 +6,6 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+
+# Sauvegardes logiques (npm run sauvegarde) : données personnelles et financières, jamais dans Git
+/sauvegardes/

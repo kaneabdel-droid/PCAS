@@ -10,8 +10,9 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type') as EmailOtpType | null
   const suite = searchParams.get('next') ?? '/'
-  // Redirection interne uniquement (pas d'URL externe injectée dans le lien).
-  const destination = suite.startsWith('/') && !suite.startsWith('//') ? suite : '/'
+  // Redirection interne uniquement (pas d'URL externe injectée dans le lien). Les navigateurs lisent « \ » comme « / » :
+  // « /\exemple.com » deviendrait « //exemple.com », d'où le refus de toute barre oblique inversée ou caractère de contrôle.
+  const destination = /^\/(?![/\\])[^\\\s]*$/.test(suite) ? suite : '/'
 
   if (tokenHash && type) {
     const supabase = await createClient()

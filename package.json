@@ -11,7 +11,9 @@
     "creer-admin": "node --env-file=.env.local scripts/creer-admin.mjs",
     "recette": "node --env-file=.env.local scripts/recette.mjs",
     "demo": "node --env-file=.env.local scripts/demo.mjs",
-    "verifier-espaces": "node --env-file=.env.local scripts/verifier-espaces.mjs"
+    "verifier-espaces": "node --env-file=.env.local scripts/verifier-espaces.mjs",
+    "sauvegarde": "node --env-file=.env.local scripts/sauvegarde.mjs",
+    "audit:securite": "node --env-file=.env.local scripts/audit-securite.mjs"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
