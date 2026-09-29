@@ -78,7 +78,7 @@ migration 13** (17).
 
 ## Reste à faire (hors code)
 
-- [ ] Exécuter les migrations 17, 18 et 19 dans l'éditeur SQL, puis `npm run demo` (acceptation du contrat v1.1).
+- [x] Migrations 17, 18 et 19 exécutées, démonstration reconstruite (contrat v1.1 accepté) : `verifier-espaces` 38/38, `audit:securite` 112/112.
 - [ ] Supabase **Pro** (sauvegardes quotidiennes, PITR) avant les premières entreprises réelles.
 - [ ] Surveillance : UptimeRobot ou Better Stack sur `https://pcas.dembasolution.com/api/sante` (alerte email).
 - [ ] Sentry (erreurs navigateur et serveur) — la référence d'incident affichée par la page d'erreur aide le support.
