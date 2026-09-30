@@ -81,6 +81,6 @@ migration 13** (17).
 - [x] Migrations 17, 18 et 19 exécutées, démonstration reconstruite (contrat v1.1 accepté) : `verifier-espaces` 38/38, `audit:securite` 112/112.
 - [ ] Supabase **Pro** (sauvegardes quotidiennes, PITR) avant les premières entreprises réelles.
 - [ ] Surveillance : `npm run surveillance` prêt (UptimeRobot, 2 sondes) — il manque la clé API du compte UptimeRobot.
-- [ ] Sentry : intégré (serveur, navigateur, pages d’erreur), inactif tant que `NEXT_PUBLIC_SENTRY_DSN` n’est pas défini dans Vercel.
+- [x] Sentry actif en production (projet `pcas`, région UE) : erreur navigateur de test transmise par `/monitoring`, alerte email configurée.
 - [ ] Lighthouse ≥ 90 sur mobile : quota PageSpeed épuisé et connexion locale trop instable pour mesurer ; à faire sur pagespeed.web.dev (voir mise-en-production.md § 6).
 - [ ] Relecture juridique des contrats v1.1 (droit OHADA et sénégalais).
