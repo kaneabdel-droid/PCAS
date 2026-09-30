@@ -14,7 +14,8 @@
     "verifier-espaces": "node --env-file=.env.local scripts/verifier-espaces.mjs",
     "sauvegarde": "node --env-file=.env.local scripts/sauvegarde.mjs",
     "audit:securite": "node --env-file=.env.local scripts/audit-securite.mjs",
-    "surveillance": "node --env-file=.env.local scripts/surveillance.mjs"
+    "surveillance": "node --env-file=.env.local scripts/surveillance.mjs",
+    "lighthouse": "node --env-file=.env.local scripts/lighthouse.mjs"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
