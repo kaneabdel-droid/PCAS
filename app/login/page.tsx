@@ -14,6 +14,7 @@ const ERREURS: Record<string, string> = {
   compte: 'Ce compte est désactivé ou n’est pas encore configuré. Contactez l’administrateur de la plateforme.',
   entreprise: 'Votre entreprise est suspendue. Contactez l’administrateur de la plateforme.',
   lien: 'Ce lien est invalide ou a expiré. Demandez un nouveau lien.',
+  sso: 'Connexion unique impossible : aucun compte administrateur PCAS actif ne porte l’email de votre compte Demba Admin. Connectez-vous ici, puis créez-le dans Administration › Utilisateurs.',
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {

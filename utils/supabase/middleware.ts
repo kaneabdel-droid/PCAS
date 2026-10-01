@@ -41,6 +41,14 @@ export async function updateSession(request: NextRequest) {
 
   if (!connecte && !estPublic) {
     const url = request.nextUrl.clone()
+    // Administration : tentative de connexion unique depuis Demba Admin (app/auth/sso/route.ts), qui retombe sur /login
+    // sans session admin partagée.
+    if (pathname.startsWith('/admin')) {
+      url.pathname = '/auth/sso'
+      url.search = ''
+      url.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+      return NextResponse.redirect(url)
+    }
     url.pathname = '/login'
     url.search = ''
     return NextResponse.redirect(url)
