@@ -1,15 +1,13 @@
-// Surveillance UptimeRobot de PCAS (API v2) : vérifie les sondes et les crée si l'offre du compte le permet.
+// Surveillance UptimeRobot de PCAS (API v3) : crée la sonde si elle n'existe pas, sinon affiche son état.
 //
 //   npm run surveillance
 //
-// Prérequis : UPTIMEROBOT_API_KEY dans .env.local (Integrations & API › « Main API key »).
+// Prérequis : UPTIMEROBOT_API_KEY dans .env.local (Integrations & API › « Main API key »). L'API v3 accepte la
+// création de sondes avec l'offre gratuite (l'ancienne API v2 la refuse : « not allowed to use some settings »).
 //
-// Sonde essentielle : /api/sante en HTTP(s). Elle répond 503 dès que la base est injoignable : une sonde HTTP simple
-// détecte donc aussi bien une panne du site (Vercel) qu'une panne de la base (Supabase). Contrôle toutes les 5 minutes,
-// alerte vers les contacts du compte (l'email d'inscription par défaut).
-//
-// L'offre gratuite d'UptimeRobot refuse la création de sondes par l'API (« not allowed to use some settings with your
-// current plan ») : le script indique alors comment la créer à la main (2 minutes), puis la vérifie au passage suivant.
+// Sonde : /api/sante en HTTP(s), toutes les 5 minutes. Elle répond 503 dès que la base est injoignable, et seules les
+// réponses 2xx comptent comme « en ligne » (sans suivre les redirections) : une panne du site (Vercel), de la base
+// (Supabase) ou une redirection inattendue vers /login déclenchent toutes une alerte vers les contacts du compte.
 const CLE = process.env.UPTIMEROBOT_API_KEY
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://pcas.dembasolution.com').replace(/\/$/, '')
 if (!CLE) {
@@ -17,46 +15,38 @@ if (!CLE) {
   process.exit(1)
 }
 
-async function api(methode, parametres = {}) {
-  const reponse = await fetch(`https://api.uptimerobot.com/v2/${methode}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Cache-Control': 'no-cache' },
-    body: new URLSearchParams({ api_key: CLE, format: 'json', ...parametres }),
+async function api(chemin, options = {}) {
+  const reponse = await fetch(`https://api.uptimerobot.com/v3/${chemin}`, {
+    ...options,
+    headers: { Authorization: `Bearer ${CLE}`, 'Content-Type': 'application/json' },
   })
-  return reponse.json()
+  const corps = await reponse.json().catch(() => null)
+  if (!reponse.ok) throw new Error(`${chemin} : ${reponse.status} ${JSON.stringify(corps)}`)
+  return corps
 }
 
-const STATUTS = { 0: 'en pause', 1: 'pas encore contrôlée', 2: 'en ligne', 8: 'semble en panne', 9: 'EN PANNE' }
-const SONDES = [
-  { friendly_name: 'PCAS — santé (site + base)', url: `${SITE}/api/sante`, type: '1' },
-  { friendly_name: 'PCAS — site', url: `${SITE}/login`, type: '1' },
-]
-
-const { alert_contacts: contacts = [] } = await api('getAlertContacts')
-const { monitors: existantes = [] } = await api('getMonitors', { alert_contacts: '1' })
-let manquantes = 0
-for (const sonde of SONDES) {
-  const deja = existantes.find((m) => m.url === sonde.url)
-  if (deja) {
-    const alertes = (deja.alert_contacts ?? []).map((c) => c.value).join(', ') || 'AUCUN contact d’alerte'
-    console.log(`= ${sonde.friendly_name} : ${STATUTS[deja.status] ?? deja.status}, toutes les ${deja.interval / 60} min, alertes → ${alertes}`)
-    continue
-  }
-  const r = await api('newMonitor', { ...sonde, interval: '300', ...(contacts.length ? { alert_contacts: contacts.map((c) => `${c.id}_0_0`).join('-') } : {}) })
-  if (r.stat === 'ok') {
-    console.log(`+ ${sonde.friendly_name} : créée (toutes les 5 minutes)`)
-  } else {
-    manquantes++
-    console.log(`✗ ${sonde.friendly_name} : création refusée par l'API (${r.error?.message ?? 'erreur'})`)
-  }
-  await new Promise((attente) => setTimeout(attente, 11000)) // limite de débit de l'API gratuite
+const SONDE = {
+  type: 'HTTP',
+  friendlyName: 'PCAS — santé (site + base)',
+  url: `${SITE}/api/sante`,
+  interval: 300,
+  timeout: 30,
+  gracePeriod: 30,
+  followRedirections: false,
+  successHttpResponseCodes: ['2xx'],
+  httpMethodType: 'GET',
 }
 
-if (manquantes) {
-  console.log(`
-À créer dans le tableau de bord UptimeRobot (+ New Monitor), pour chaque sonde manquante :
-  Monitor Type : HTTP(s) · URL : ${SONDES[0].url} (puis ${SONDES[1].url}) · Monitoring interval : 5 minutes
-  How will we notify you? : ${contacts.map((c) => c.value).join(', ') || 'votre email'} · Create Monitor
-Puis relancez npm run surveillance pour vérifier.`)
-  process.exitCode = 1
+const contacts = await api('user/alert-contacts')
+const { data: sondes = [] } = await api('monitors')
+const existante = sondes.find((m) => m.url === SONDE.url)
+if (existante) {
+  const alertes = existante.assignedAlertContacts.map((a) => contacts.find((c) => c.id === a.alertContactId)?.value ?? a.alertContactId)
+  console.log(`= ${existante.friendlyName} : ${existante.status}, toutes les ${existante.interval / 60} min, alertes → ${alertes.join(', ') || 'AUCUNE'}`)
+} else {
+  const creee = await api('monitors', {
+    method: 'POST',
+    body: JSON.stringify({ ...SONDE, assignedAlertContacts: contacts.map((c) => ({ alertContactId: c.id, threshold: 0, recurrence: 0 })) }),
+  })
+  console.log(`+ ${creee.friendlyName} : créée (n° ${creee.id}), alertes → ${contacts.map((c) => c.value).join(', ') || 'AUCUNE'}`)
 }
