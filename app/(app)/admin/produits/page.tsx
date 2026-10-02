@@ -1,16 +1,20 @@
 import type { Metadata } from 'next'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Plus } from 'lucide-react'
 import { FormulaireAction } from '@/components/FormulaireAction'
+import { Button } from '@/components/ui/button'
 import { Card, PageHeader } from '@/components/ui/card'
 import { Badge, Champ, GrilleChamps } from '@/components/ui/champ'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import {
   creerProduit,
   enregistrerTransformation,
+  enregistrerReferentiel,
   modifierProduit,
+  supprimerReferentiel,
   supprimerTransformation,
 } from '@/app/(app)/admin/produits/actions'
-import { CATEGORIES_PRODUIT, NATURES_PRODUIT, UNITES } from '@/lib/referentiels'
+import { chargerReferentielsProduit, type Referentiel } from '@/lib/catalogue'
+import { NATURES_PRODUIT } from '@/lib/referentiels'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Catalogue produits' }
@@ -31,7 +35,7 @@ type Transformation = {
   produit: { nom: string; unite: string } | null
 }
 
-function ChampsProduit({ produit }: { produit?: Produit }) {
+function ChampsProduit({ produit, categories, unites }: { produit?: Produit; categories: Referentiel[]; unites: Referentiel[] }) {
   const suffixe = produit?.id ?? 'nouveau'
   return (
     <GrilleChamps>
@@ -43,8 +47,8 @@ function ChampsProduit({ produit }: { produit?: Produit }) {
           <option value="" disabled>
             Choisir…
           </option>
-          {CATEGORIES_PRODUIT.map((c) => (
-            <option key={c}>{c}</option>
+          {categories.map((c) => (
+            <option key={c.nom}>{c.nom}</option>
           ))}
         </Select>
       </Champ>
@@ -58,9 +62,9 @@ function ChampsProduit({ produit }: { produit?: Produit }) {
         </Select>
       </Champ>
       <Champ id={`unite-${suffixe}`} label="Unité de vente" requis>
-        <Select id={`unite-${suffixe}`} name="unite" required defaultValue={produit?.unite ?? 'kg'}>
-          {UNITES.map((u) => (
-            <option key={u}>{u}</option>
+        <Select id={`unite-${suffixe}`} name="unite" required defaultValue={produit?.unite ?? unites[0]?.nom}>
+          {unites.map((u) => (
+            <option key={u.nom}>{u.nom}</option>
           ))}
         </Select>
       </Champ>
@@ -71,17 +75,67 @@ function ChampsProduit({ produit }: { produit?: Produit }) {
   )
 }
 
+function ListeReferentiel({
+  table,
+  titre,
+  elements,
+  placeholder,
+}: {
+  table: 'categories_produit' | 'unites_produit'
+  titre: string
+  elements: Referentiel[]
+  placeholder: string
+}) {
+  return (
+    <section>
+      <h3 className="mb-2 text-sm font-semibold">{titre}</h3>
+      <ul className="mb-3 divide-y divide-surface-border overflow-hidden rounded-lg border border-surface-border">
+        {elements.map((e) => (
+          <li key={e.id}>
+            <details>
+              <summary className="cursor-pointer list-none px-3 py-2 text-sm hover:bg-surface-muted">{e.nom}</summary>
+              <div className="space-y-3 border-t border-surface-border bg-surface-muted/50 p-3">
+                <FormulaireAction action={enregistrerReferentiel} libelle="Renommer" variante="outline" boutonClassName="h-8 px-3 text-xs">
+                  <input type="hidden" name="table" value={table} />
+                  <input type="hidden" name="id" value={e.id} />
+                  <Input name="nom" required defaultValue={e.nom} aria-label={`Nouveau nom de « ${e.nom} »`} />
+                </FormulaireAction>
+                <FormulaireAction
+                  action={supprimerReferentiel}
+                  libelle="Supprimer"
+                  variante="ghost"
+                  boutonClassName="h-8 px-2 text-xs text-danger"
+                  confirmation={`Supprimer « ${e.nom} » ?`}
+                >
+                  <input type="hidden" name="table" value={table} />
+                  <input type="hidden" name="id" value={e.id} />
+                </FormulaireAction>
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+      <FormulaireAction action={enregistrerReferentiel} libelle="Ajouter" variante="outline" reinitialiser boutonClassName="h-8 px-3 text-xs">
+        <input type="hidden" name="table" value={table} />
+        <Input name="nom" required placeholder={`Ex. ${placeholder}`} aria-label={`Nouvelle entrée : ${titre.toLowerCase()}`} />
+      </FormulaireAction>
+    </section>
+  )
+}
+
 export default async function ProduitsPage() {
   const supabase = await createClient()
-  const [{ data: produitsData }, { data: transformationsData }] = await Promise.all([
+  const [{ data: produitsData }, { data: transformationsData }, referentiels] = await Promise.all([
     supabase.from('produits').select('id, nom, categorie, nature, unite, description, actif').order('categorie').order('nom').returns<Produit[]>(),
     supabase
       .from('transformations')
       .select('id, rendement, matiere:produits!transformations_matiere_id_fkey(nom, unite), produit:produits!transformations_produit_id_fkey(nom, unite)')
       .returns<Transformation[]>(),
+    chargerReferentielsProduit(supabase),
   ])
   const produits = produitsData ?? []
   const transformations = transformationsData ?? []
+  const listes = { categories: referentiels.categories, unites: referentiels.unites }
   const categories = [...new Set(produits.map((p) => p.categorie))]
   const matieres = produits.filter((p) => p.nature === 'matiere_premiere' && p.actif)
   const finis = produits.filter((p) => p.nature === 'produit_fini' && p.actif)
@@ -91,10 +145,21 @@ export default async function ProduitsPage() {
       <PageHeader
         titre="Catalogue produits"
         description="Produits proposés sur la plateforme. Les producteurs publient leurs offres à partir de ce catalogue."
-      />
+      >
+        <Button asChild>
+          <a href="#nouveau-produit">
+            <Plus className="h-4 w-4" aria-hidden /> Nouveau produit
+          </a>
+        </Button>
+      </PageHeader>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
         <div className="space-y-6">
+          {produits.length === 0 && (
+            <p className="rounded-xl border border-dashed border-surface-border p-6 text-center text-sm text-foreground-muted">
+              Aucun produit pour l’instant. Ajoutez le premier avec le formulaire « Nouveau produit ».
+            </p>
+          )}
           {categories.map((categorie) => (
             <section key={categorie}>
               <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-foreground-muted">{categorie}</h2>
@@ -113,7 +178,7 @@ export default async function ProduitsPage() {
                         <div className="border-t border-surface-border bg-surface-muted/50 p-4">
                           <FormulaireAction action={modifierProduit} libelle="Enregistrer">
                             <input type="hidden" name="produit_id" value={p.id} />
-                            <ChampsProduit produit={p} />
+                            <ChampsProduit produit={p} {...listes} />
                             <label className="flex items-center gap-2 text-sm">
                               <input type="checkbox" name="actif" defaultChecked={p.actif} className="h-4 w-4 accent-primary" /> Produit
                               actif (proposé aux producteurs)
@@ -129,11 +194,29 @@ export default async function ProduitsPage() {
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <h2 className="mb-4 font-heading font-semibold">Ajouter un produit</h2>
+          <Card id="nouveau-produit" className="scroll-mt-20">
+            <h2 className="mb-4 font-heading font-semibold">Nouveau produit</h2>
             <FormulaireAction action={creerProduit} libelle="Ajouter au catalogue" reinitialiser>
-              <ChampsProduit />
+              <ChampsProduit {...listes} />
             </FormulaireAction>
+          </Card>
+
+          <Card>
+            <h2 className="font-heading font-semibold">Catégories et unités de vente</h2>
+            <p className="mb-4 mt-1 text-sm text-foreground-muted">
+              Listes proposées dans la fiche produit. Un nouveau nom se répercute sur les produits concernés ; une catégorie ou une unité encore
+              utilisée ne peut pas être supprimée.
+            </p>
+            {referentiels.gerables ? (
+              <div className="space-y-6">
+                <ListeReferentiel table="categories_produit" titre="Catégories" elements={referentiels.categories} placeholder="Élevage" />
+                <ListeReferentiel table="unites_produit" titre="Unités de vente" elements={referentiels.unites} placeholder="litre" />
+              </div>
+            ) : (
+              <p className="rounded-lg border border-dashed border-surface-border p-3 text-sm text-foreground-muted">
+                Appliquez la migration <code>20_referentiels_produit.sql</code> pour pouvoir modifier ces listes.
+              </p>
+            )}
           </Card>
 
           <Card>

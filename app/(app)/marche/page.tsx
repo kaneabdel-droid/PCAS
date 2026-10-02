@@ -8,7 +8,8 @@ import { Vide } from '@/components/ui/champ'
 import { Input, Select } from '@/components/ui/input'
 import { exigerLecture } from '@/lib/droits'
 import type { OffreMarche } from '@/lib/marche'
-import { CATEGORIES_PRODUIT, REGIONS } from '@/lib/referentiels'
+import { chargerReferentielsProduit } from '@/lib/catalogue'
+import { REGIONS } from '@/lib/referentiels'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Offres des producteurs' }
@@ -38,12 +39,13 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
         ? requete.order('date_disponibilite', { ascending: true, nullsFirst: true })
         : requete.order('publiee_le', { ascending: false })
 
-  const [{ data }, { data: produits }, { count: nbPanier }] = await Promise.all([
+  const [{ data }, { data: produits }, { count: nbPanier }, { categories }] = await Promise.all([
     requete.limit(200),
     supabase.from('produits').select('id, nom').eq('nature', 'produit_fini').eq('actif', true).order('nom'),
     ctx.role === 'client'
       ? supabase.from('paniers').select('offre_id', { count: 'exact', head: true })
       : Promise.resolve({ count: 0 }),
+    chargerReferentielsProduit(supabase),
   ])
   const offres = (data ?? []) as unknown as OffreMarche[]
 
@@ -77,8 +79,8 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
         </Select>
         <Select name="categorie" defaultValue={f.categorie ?? ''} aria-label="Catégorie">
           <option value="">Toutes catégories</option>
-          {CATEGORIES_PRODUIT.map((c) => (
-            <option key={c}>{c}</option>
+          {categories.map((c) => (
+            <option key={c.nom}>{c.nom}</option>
           ))}
         </Select>
         <Select name="region" defaultValue={f.region ?? ''} aria-label="Région">
