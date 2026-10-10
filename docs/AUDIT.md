@@ -79,8 +79,8 @@ migration 13** (17).
 ## Reste à faire (hors code)
 
 - [x] Migrations 17, 18 et 19 exécutées, démonstration reconstruite (contrat v1.1 accepté) : `verifier-espaces` 38/38, `audit:securite` 112/112.
-- [ ] Supabase **Pro** (sauvegardes quotidiennes, PITR) avant les premières entreprises réelles.
+- [x] Supabase **Pro** (sauvegardes quotidiennes, PITR) avant les premières entreprises réelles.
 - [x] Surveillance UptimeRobot : sonde HTTP(s) `/api/sante` toutes les 5 min (2xx seulement, sans suivre les redirections), alerte email — créée par l’API v3 (`npm run surveillance`).
 - [x] Sentry actif en production (projet `pcas`, région UE) : erreur navigateur de test transmise par `/monitoring`, alerte email configurée.
 - [x] Lighthouse mobile (`npm run lighthouse`, exécuté par Google) : `/login` 99 · 100 · 100 · 100 ; `/guide` 99 · 100 · 100 · 100 ; `/decouvrir-pcas` 94 · 100 · 100 · 100 (performance · accessibilité · bonnes pratiques · SEO), après ajout de robots.txt et sitemap.xml (SEO 91 → 100).
-- [ ] Relecture juridique des contrats v1.1 (droit OHADA et sénégalais).
+- [x] Relecture juridique des contrats v1.1 (droit OHADA et sénégalais).
