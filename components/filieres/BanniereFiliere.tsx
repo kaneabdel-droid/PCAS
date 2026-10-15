@@ -27,7 +27,8 @@ export function BanniereFiliere({
   const f = FILIERES[filiereActive]
   const Icone = ICONES[filiereActive]
 
-  const estDedie = Boolean(userFiliere && role === 'superviseur')
+  const estDedie = Boolean(userFiliere)
+  const estAdminFiliere = estDedie && role === 'administrateur'
 
   return (
     <aside
@@ -66,19 +67,25 @@ export function BanniereFiliere({
               </h2>
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                  'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
                   estDedie
-                    ? 'bg-black/10 dark:bg-white/10 text-foreground'
+                    ? 'bg-black/10 dark:bg-white/10 text-foreground border border-black/10 dark:border-white/10'
                     : 'bg-white/70 dark:bg-black/40 text-foreground shadow-xs'
                 )}
               >
-                {estDedie ? '🔒 Supervision Dédiée' : '⚡ Espace Filière Actif'}
+                {estAdminFiliere
+                  ? '🔒 Copie Dédiée — Administrateur Filière'
+                  : estDedie
+                  ? '🔒 Supervision Dédiée — Superviseur Principal'
+                  : '⚡ Espace Filière Actif'}
               </span>
             </div>
 
             <p className="mt-0.5 text-xs text-foreground-muted sm:text-sm">
-              {estDedie
-                ? 'Votre compte supervise exclusivement cette filière agricole. Tous les écrans sont verrouillés sur ce périmètre.'
+              {estAdminFiliere
+                ? `Plateforme autonome PCAS dédiée à la filière ${f.nom}. Vos données de catalogue, marché, commandes et stocks sont gérées dans cette copie dédiée.`
+                : estDedie
+                ? `Votre compte supervise exclusivement la filière ${f.nom}. Tous les écrans sont verrouillés sur ce périmètre.`
                 : 'Affichage, stocks, place de marché et supervision filtrés en temps réel sur cette filière.'}
             </p>
 

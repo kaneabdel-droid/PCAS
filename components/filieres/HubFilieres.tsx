@@ -34,8 +34,8 @@ export function HubFilieres({
     })
   }
 
-  // Si l'utilisateur est un superviseur dédié, il n'a pas accès au hub multi-filières
-  if (userFiliere && role === 'superviseur') {
+  // Si l'utilisateur est dédié à une filière (administrateur filière ou superviseur), il est directement sur sa copie dédiée
+  if (userFiliere) {
     return null
   }
 

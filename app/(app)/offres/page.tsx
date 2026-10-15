@@ -6,7 +6,8 @@ import { CarteOffre } from '@/components/offres/CarteOffre'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/card'
 import { Vide } from '@/components/ui/champ'
-import { droitsEcran, exigerLecture } from '@/lib/droits'
+import { droitsEcran } from '@/lib/droits'
+import { determinerFiliere } from '@/lib/filieres'
 import { SELECT_OFFRE, type Offre } from '@/lib/offres'
 import { createClient } from '@/utils/supabase/server'
 
@@ -20,14 +21,17 @@ const ONGLETS = [
 ]
 
 export default async function OffresPage({ searchParams }: { searchParams: Promise<{ onglet?: string }> }) {
-  await exigerLecture('/offres', ['producteur'])
-  const { ecrire } = await droitsEcran('/offres', ['producteur'])
+  const { ctx, ecrire } = await droitsEcran('/offres', ['producteur'])
   const demande = (await searchParams).onglet
   const onglet = ONGLETS.some((o) => o.cle === demande) ? demande! : 'publiee'
 
   const supabase = await createClient()
   const { data } = await supabase.from('offres').select(SELECT_OFFRE).order('created_at', { ascending: false }).returns<Offre[]>()
-  const offres = data ?? []
+  const filiereCible = ctx.filiereActive
+  const toutesOffres = data ?? []
+  const offres = filiereCible === 'toutes'
+    ? toutesOffres
+    : toutesOffres.filter((o) => o.produits && determinerFiliere(o.produits) === filiereCible)
   const affichees = offres.filter((o) => o.statut === onglet)
 
   return (

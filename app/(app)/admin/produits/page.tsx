@@ -18,6 +18,7 @@ import { chargerReferentielsProduit, type Referentiel } from '@/lib/catalogue'
 import { FILIERES, FILIERES_CODES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
 import { NATURES_PRODUIT } from '@/lib/referentiels'
 import { cn } from '@/lib/utils'
+import { getContexte } from '@/lib/session'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Catalogue produits' }
@@ -39,9 +40,19 @@ type Transformation = {
   produit: { nom: string; unite: string } | null
 }
 
-function ChampsProduit({ produit, categories, unites }: { produit?: Produit; categories: Referentiel[]; unites: Referentiel[] }) {
+function ChampsProduit({
+  produit,
+  categories,
+  unites,
+  filiereDefaut,
+}: {
+  produit?: Produit
+  categories: Referentiel[]
+  unites: Referentiel[]
+  filiereDefaut?: FiliereCode
+}) {
   const suffixe = produit?.id ?? 'nouveau'
-  const filiereInitiale = produit ? determinerFiliere(produit) : 'cereale'
+  const filiereInitiale = produit ? determinerFiliere(produit) : (filiereDefaut ?? 'cereale')
   return (
     <GrilleChamps>
       <Champ id={`nom-${suffixe}`} label="Nom" requis>
@@ -139,7 +150,7 @@ function ListeReferentiel({
 }
 
 export default async function ProduitsPage() {
-  const supabase = await createClient()
+  const [ctx, supabase] = await Promise.all([getContexte(), createClient()])
   const [{ data: produitsData }, { data: transformationsData }, referentiels] = await Promise.all([
     supabase.from('produits').select('id, nom, categorie, filiere, nature, unite, description, actif').order('categorie').order('nom').returns<Produit[]>(),
     supabase
@@ -148,7 +159,11 @@ export default async function ProduitsPage() {
       .returns<Transformation[]>(),
     chargerReferentielsProduit(supabase),
   ])
-  const produits = produitsData ?? []
+  const filiereCible = ctx.filiereActive
+  const tousProduits = produitsData ?? []
+  const produits = filiereCible === 'toutes'
+    ? tousProduits
+    : tousProduits.filter((p) => determinerFiliere(p) === filiereCible)
   const transformations = transformationsData ?? []
   const listes = { categories: referentiels.categories, unites: referentiels.unites }
   const categories = [...new Set(produits.map((p) => p.categorie))]
@@ -218,7 +233,7 @@ export default async function ProduitsPage() {
           <Card id="nouveau-produit" className="scroll-mt-20">
             <h2 className="mb-4 font-heading font-semibold">Nouveau produit</h2>
             <FormulaireAction action={creerProduit} libelle="Ajouter au catalogue" reinitialiser>
-              <ChampsProduit {...listes} />
+              <ChampsProduit {...listes} filiereDefaut={filiereCible !== 'toutes' ? filiereCible : undefined} />
             </FormulaireAction>
           </Card>
 

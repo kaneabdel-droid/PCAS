@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
 import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { Input, Select } from '@/components/ui/input'
-import { LIBELLES_ROLES, estRoleBase, type RoleBase } from '@/lib/roles'
+import { LIBELLES_ROLES, estRoleBase, libelleRoleComplet, type RoleBase } from '@/lib/roles'
 import type { FiliereCode } from '@/lib/filieres'
 import { createClient } from '@/utils/supabase/server'
 
@@ -89,7 +89,7 @@ export default async function UtilisateursPage({ searchParams }: { searchParams:
                 </div>
                 <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex">
                   {u.filiere && <FiliereBadge filiere={u.filiere} taille="petite" court />}
-                  <Badge ton="primaire">{u.profils?.libelle ?? LIBELLES_ROLES[u.role_base]}</Badge>
+                  <Badge ton="primaire">{u.profils?.libelle ?? libelleRoleComplet(u.role_base, u.filiere)}</Badge>
                   {u.signataire && <Badge ton="info">Signataire</Badge>}
                   {!u.actif && <Badge ton="danger">Désactivé</Badge>}
                 </div>

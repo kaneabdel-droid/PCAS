@@ -21,12 +21,12 @@ export type Offre = {
   statut: 'brouillon' | 'publiee' | 'suspendue' | 'epuisee'
   publiee_le: string | null
   created_at: string
-  produits: { nom: string; unite: string; categorie: string } | null
+  produits: { nom: string; unite: string; categorie: string; filiere?: import('@/lib/filieres').FiliereCode | null } | null
   sites_production: { nom: string; region: string | null } | null
 }
 
 export const SELECT_OFFRE =
-  'id, producteur_id, site_id, produit_id, disponibilite, date_disponibilite, date_fin_validite, prix_unitaire, quantite_offerte, quantite_reservee, quantite_min_commande, variete, calibre, qualite, conditionnement, description, photos, statut, publiee_le, created_at, produits(nom, unite, categorie), sites_production(nom, region)'
+  'id, producteur_id, site_id, produit_id, disponibilite, date_disponibilite, date_fin_validite, prix_unitaire, quantite_offerte, quantite_reservee, quantite_min_commande, variete, calibre, qualite, conditionnement, description, photos, statut, publiee_le, created_at, produits(nom, unite, categorie, filiere), sites_production(nom, region)'
 
 /** Sites actifs et produits finis actifs du producteur connecté, pour le formulaire d'offre. */
 export async function optionsOffre() {

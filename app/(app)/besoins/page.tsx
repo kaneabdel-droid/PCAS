@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
 import { STATUTS_BESOIN } from '@/lib/commandes'
 import { droitsEcran, exigerLecture } from '@/lib/droits'
+import { determinerFiliere, type FiliereCode } from '@/lib/filieres'
 import { formatQuantite } from '@/lib/stocks'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
@@ -36,7 +37,7 @@ type Besoin = {
   region_livraison: string | null
   statut: string
   created_at: string
-  produits: { nom: string; unite: string } | null
+  produits: { nom: string; unite: string; categorie?: string | null; filiere?: FiliereCode | null } | null
   propositions_besoin: { count: number }[]
 }
 
@@ -103,12 +104,16 @@ export default async function BesoinsPage({ searchParams }: { searchParams: Prom
 
   let requete = supabase
     .from('besoins_achat')
-    .select('id, numero, quantite, prix_cible, date_souhaitee, region_livraison, statut, created_at, produits(nom, unite), propositions_besoin(count)')
+    .select('id, numero, quantite, prix_cible, date_souhaitee, region_livraison, statut, created_at, produits(nom, unite, categorie, filiere), propositions_besoin(count)')
     .order('created_at', { ascending: false })
     .limit(300)
   if (f.produit) requete = requete.eq('produit_id', f.produit)
   const { data } = await requete.returns<Besoin[]>()
-  const besoins = data ?? []
+  const filiereCible = ctx.filiereActive
+  const tousBesoins = data ?? []
+  const besoins = filiereCible === 'toutes'
+    ? tousBesoins
+    : tousBesoins.filter((b) => b.produits && determinerFiliere(b.produits) === filiereCible)
 
   return (
     <>

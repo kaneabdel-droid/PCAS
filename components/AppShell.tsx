@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  Apple,
   BadgeCheck,
   BookOpen,
   Building2,
   CalendarClock,
+  Carrot,
   ClipboardList,
   Factory,
   FileSignature,
@@ -16,6 +18,7 @@ import {
   Home,
   Inbox,
   Landmark,
+  Layers,
   LayoutDashboard,
   LogOut,
   Megaphone,
@@ -46,7 +49,7 @@ import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { MENUS, type MenuItem } from '@/lib/menus'
 import { permissionMenu, type Matrice } from '@/lib/permissions'
 import type { RoleBase } from '@/lib/roles'
-import type { FiliereCode, FiliereFiltre } from '@/lib/filieres'
+import { FILIERES, type FiliereCode, type FiliereFiltre } from '@/lib/filieres'
 
 // Icônes par href : tenues à part du registre lib/menus.ts, qui reste sans dépendance d'affichage.
 const ICONES: Record<string, typeof LayoutDashboard> = {
@@ -140,12 +143,37 @@ export function AppShell({
     .filter((i): i is MenuItem => Boolean(i))
     .slice(0, 3)
 
+  const infoFiliere = filiereActive !== 'toutes' ? FILIERES[filiereActive] : null
+  const IconeFiliere =
+    filiereActive === 'cereale'
+      ? Wheat
+      : filiereActive === 'maraichage'
+        ? Carrot
+        : filiereActive === 'fruitier'
+          ? Apple
+          : null
+
   const entete = (
     <div className="flex items-center gap-3 border-b border-sidebar-border px-4 py-4">
-      <Embleme />
+      {infoFiliere && IconeFiliere ? (
+        <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-xs text-white', infoFiliere.theme.emblemBg)}>
+          <IconeFiliere className="h-5 w-5" aria-hidden />
+        </div>
+      ) : (
+        <Embleme />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="font-heading text-base font-bold leading-tight text-sidebar-foreground">PCAS</p>
-        <p className="truncate text-xs text-sidebar-muted">{entreprise}</p>
+        <p className="font-heading text-base font-bold leading-tight text-sidebar-foreground flex items-center gap-1.5">
+          <span>PCAS</span>
+          {infoFiliere && (
+            <span className={cn('text-[11px] font-semibold px-1.5 py-0.5 rounded border', infoFiliere.theme.badgeClass)}>
+              {infoFiliere.nomCourt}
+            </span>
+          )}
+        </p>
+        <p className="truncate text-xs text-sidebar-muted">
+          {infoFiliere ? (userFiliere ? `Instance dédiée · ${infoFiliere.nomCourt}` : infoFiliere.nom) : entreprise}
+        </p>
       </div>
       <Cloche key={nonLues} utilisateurId={utilisateurId} nonLues={nonLues} className="hidden lg:inline-flex" />
     </div>
@@ -279,16 +307,31 @@ export function AppShell({
 
         {/* Mobile et tablette : barre supérieure */}
         <header className="sticky top-0 z-30 flex items-center gap-3 bg-sidebar px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
-          <Embleme className="h-8 w-8" />
+          {infoFiliere && IconeFiliere ? (
+            <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-xs text-white', infoFiliere.theme.emblemBg)}>
+              <IconeFiliere className="h-4.5 w-4.5" aria-hidden />
+            </div>
+          ) : (
+            <Embleme className="h-8 w-8" />
+          )}
           <div className="min-w-0 flex-1">
-            <p className="font-heading font-bold leading-tight text-sidebar-foreground">PCAS</p>
-            <p className="truncate text-xs text-sidebar-muted">{entreprise}</p>
+            <p className="font-heading font-bold leading-tight text-sidebar-foreground flex items-center gap-1.5">
+              <span>PCAS</span>
+              {infoFiliere && (
+                <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded border', infoFiliere.theme.badgeClass)}>
+                  {infoFiliere.nomCourt}
+                </span>
+              )}
+            </p>
+            <p className="truncate text-xs text-sidebar-muted">
+              {infoFiliere ? (userFiliere ? `Instance dédiée · ${infoFiliere.nomCourt}` : infoFiliere.nom) : entreprise}
+            </p>
           </div>
           <Cloche key={nonLues} utilisateurId={utilisateurId} nonLues={nonLues} />
         </header>
 
-        {/* Mobile : barre de sélection de filière si multi-filières ou superviseur dédié */}
-        {(filieresActivesPlateforme.length > 1 || (userFiliere && role === 'superviseur')) && (
+        {/* Mobile : barre de sélection de filière si multi-filières ou utilisateur dédié */}
+        {(filieresActivesPlateforme.length > 1 || userFiliere) && (
           <div className="border-b border-surface-border bg-surface px-4 py-2 lg:hidden">
             <SelecteurFiliere
               filiereActive={filiereActive}

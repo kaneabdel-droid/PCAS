@@ -89,17 +89,17 @@ export function ChampsUtilisateur({
           ))}
         </Select>
       </Champ>
-      {role === 'superviseur' && (
+      {(role === 'superviseur' || role === 'administrateur') && (
         <Champ
           id="filiere"
-          label="Filière de supervision"
-          aide="Affectez ce superviseur à une filière spécifique ou laissez vide pour une supervision globale (toutes filières)."
+          label={role === 'administrateur' ? "Habilitation Filière (Administrateur Filière)" : "Habilitation Filière (Superviseur Principal)"}
+          aide="Affectez cet utilisateur à une filière spécifique pour lui allouer une copie dédiée de la plateforme restreinte à cette filière, ou laissez sur 'Toutes les filières' pour un accès central global."
         >
           <Select id="filiere" name="filiere" defaultValue={valeurs?.filiere ?? ''}>
-            <option value="">Toutes les filières (Supervision transversale)</option>
-            <option value="cereale">Céréales & Grains</option>
-            <option value="maraichage">Maraîchage & Légumes</option>
-            <option value="fruitier">Arboriculture & Fruits</option>
+            <option value="">🌐 Toutes les filières (SuperAdmin / Accès Central)</option>
+            <option value="cereale">🌾 Céréales & Grains — Instance Filière Céréales</option>
+            <option value="maraichage">🥕 Maraîchage & Légumes — Instance Filière Maraîchage</option>
+            <option value="fruitier">🍎 Arboriculture & Fruits — Instance Filière Fruits</option>
           </Select>
         </Champ>
       )}

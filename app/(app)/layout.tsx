@@ -5,7 +5,7 @@ import { EnregistrementPush } from '@/components/natif/EnregistrementPush'
 import { BanniereFiliere } from '@/components/filieres/BanniereFiliere'
 import { demoActive, estCompteDemo } from '@/lib/demo'
 import { getContexte } from '@/lib/session'
-import { LIBELLES_ROLES } from '@/lib/roles'
+import { LIBELLES_ROLES, libelleRoleComplet } from '@/lib/roles'
 import { createClient } from '@/utils/supabase/server'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <AppShell
       utilisateur={ctx.nomComplet}
       role={ctx.role}
-      roleLibelle={ctx.profilLibelle ?? LIBELLES_ROLES[ctx.role]}
+      roleLibelle={ctx.profilLibelle ?? libelleRoleComplet(ctx.role, ctx.filiere)}
       entreprise={ctx.entrepriseNom ?? 'Plateforme PCAS'}
       permissions={ctx.permissions}
       utilisateurId={ctx.userId}

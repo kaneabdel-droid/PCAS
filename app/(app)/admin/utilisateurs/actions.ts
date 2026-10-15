@@ -37,7 +37,7 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
   if (!plateforme && !entrepriseId) return { error: 'Ce rôle doit être rattaché à une entreprise.' }
 
   const filiereBrute = texte(fd, 'filiere')
-  const filiere = role === 'superviseur' && filiereBrute ? filiereBrute : null
+  const filiere = (role === 'superviseur' || role === 'administrateur') && filiereBrute ? filiereBrute : null
 
   const admin = createAdminClient()
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
@@ -87,7 +87,7 @@ export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
   if (!plateforme && !entrepriseId) return { error: 'Ce rôle doit être rattaché à une entreprise.' }
 
   const filiereBrute = texte(fd, 'filiere')
-  const filiere = role === 'superviseur' && filiereBrute ? filiereBrute : null
+  const filiere = (role === 'superviseur' || role === 'administrateur') && filiereBrute ? filiereBrute : null
 
   const ctx = await getContexte()
   if (id === ctx.userId && role !== 'administrateur') {

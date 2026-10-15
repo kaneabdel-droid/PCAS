@@ -28,10 +28,11 @@ export function SelecteurFiliere({
 }) {
   const [isPending, startTransition] = useTransition()
 
-  // Si le superviseur est dédié à une filière spécifique, afficher son badge exclusif
-  if (userFiliere && role === 'superviseur') {
+  // Si l'utilisateur est dédié à une filière spécifique (Administrateur Filière ou Superviseur Principal)
+  if (userFiliere) {
     const f = FILIERES[userFiliere]
     const Icone = ICONES[userFiliere]
+    const titreRole = role === 'administrateur' ? 'Administrateur Filière' : 'Superviseur Principal'
     return (
       <div
         className={cn(
@@ -44,7 +45,7 @@ export function SelecteurFiliere({
           <Icone className="h-3.5 w-3.5" aria-hidden />
         </span>
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">Supervision Dédiée</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">{titreRole}</span>
           <span className="font-heading font-bold">{f.nom}</span>
         </div>
       </div>

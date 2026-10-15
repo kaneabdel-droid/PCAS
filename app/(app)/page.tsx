@@ -14,7 +14,7 @@ import { ListeATraiter, Tuiles } from '@/components/tableau-de-bord/Tuiles'
 import { HubFilieres } from '@/components/filieres/HubFilieres'
 import { getContexte } from '@/lib/session'
 import { donneesTableauDeBord } from '@/lib/tableau-de-bord'
-import { LIBELLES_ROLES, type RoleBase } from '@/lib/roles'
+import { LIBELLES_ROLES, libelleRoleComplet, type RoleBase } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Tableau de bord' }
@@ -48,7 +48,7 @@ export default async function TableauDeBordPage() {
     <>
       <PageHeader
         titre={`${salutation()}, ${prenom}`}
-        description={`${ctx.profilLibelle ?? LIBELLES_ROLES[ctx.role]}${ctx.entrepriseNom ? ` · ${ctx.entrepriseNom}` : ' · Plateforme PCAS'}`}
+        description={`${ctx.profilLibelle ?? libelleRoleComplet(ctx.role, ctx.filiere)}${ctx.entrepriseNom ? ` · ${ctx.entrepriseNom}` : ' · Plateforme PCAS'}`}
       />
 
       <div className="mb-8 space-y-6">
