@@ -47,7 +47,13 @@ export const getContexte = cache(async (): Promise<Contexte> => {
       )
       .eq('id', sub)
       .maybeSingle<LigneUtilisateur>(),
-    supabase.from('parametres_plateforme').select('filieres_actives').single(),
+    (async () => {
+      try {
+        return await supabase.from('parametres_plateforme').select('filieres_actives').maybeSingle()
+      } catch {
+        return { data: null }
+      }
+    })(),
     cookies(),
   ])
 
