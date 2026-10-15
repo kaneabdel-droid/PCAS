@@ -87,6 +87,45 @@
   --info: #6EA8E6;
 }
 
+/*
+  Ambiances et thèmes visuels par filière agricole :
+  - Céréale : ambre blé doré (#D97706)
+  - Maraîchage : émeraude fraîcheur potagère (#059669)
+  - Fruitier : rubis verger & mangue orangée (#E11D48 / #EA580C)
+  - Vue globale : vert savane & ocre latérite (#2E6E3E / #C4661C)
+*/
+[data-filiere="cereale"] {
+  --filiere-theme-color: #D97706;
+  --filiere-theme-hover: #B45309;
+  --filiere-theme-soft: #FEF3C7;
+  --filiere-theme-border: #FCD34D;
+  --filiere-theme-glow: rgba(217, 119, 6, 0.2);
+}
+
+[data-filiere="maraichage"] {
+  --filiere-theme-color: #059669;
+  --filiere-theme-hover: #047857;
+  --filiere-theme-soft: #D1FAE5;
+  --filiere-theme-border: #6EE7B7;
+  --filiere-theme-glow: rgba(5, 150, 105, 0.2);
+}
+
+[data-filiere="fruitier"] {
+  --filiere-theme-color: #E11D48;
+  --filiere-theme-hover: #BE123C;
+  --filiere-theme-soft: #FFE4E6;
+  --filiere-theme-border: #FDA4AF;
+  --filiere-theme-glow: rgba(225, 29, 72, 0.2);
+}
+
+[data-filiere="toutes"] {
+  --filiere-theme-color: #2E6E3E;
+  --filiere-theme-hover: #245732;
+  --filiere-theme-soft: #E3F0E6;
+  --filiere-theme-border: #A7D3B2;
+  --filiere-theme-glow: rgba(46, 110, 62, 0.2);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);

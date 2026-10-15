@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { FileSignature, FlaskConical } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { EnregistrementPush } from '@/components/natif/EnregistrementPush'
+import { BanniereFiliere } from '@/components/filieres/BanniereFiliere'
 import { demoActive, estCompteDemo } from '@/lib/demo'
 import { getContexte } from '@/lib/session'
 import { LIBELLES_ROLES } from '@/lib/roles'
@@ -34,6 +35,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       permissions={ctx.permissions}
       utilisateurId={ctx.userId}
       nonLues={nonLues ?? 0}
+      filiereActive={ctx.filiereActive}
+      filieresActivesPlateforme={ctx.filieresActivesPlateforme}
+      userFiliere={ctx.filiere}
     >
       <EnregistrementPush />
       {demoActive() && estCompteDemo(ctx.email) && (
@@ -60,7 +64,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
         </div>
       )}
+      <BanniereFiliere filiereActive={ctx.filiereActive} userFiliere={ctx.filiere} role={ctx.role} />
       {children}
     </AppShell>
   )
 }
+

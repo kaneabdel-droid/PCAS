@@ -3,10 +3,13 @@ import Link from 'next/link'
 import { AlertTriangle, CheckCircle2, ChevronRight, XCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { STATUTS_COMMANDE } from '@/lib/commandes'
 import { exigerLecture } from '@/lib/droits'
+import { FILIERES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
+import { getContexte } from '@/lib/session'
 import { STATUTS_A_TRAITER, analyser, dateAnalyse, niveauRisque } from '@/lib/supervision'
-import { formatDate, formatMontant } from '@/lib/utils'
+import { cn, formatDate, formatMontant } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Approbations' }
@@ -23,7 +26,7 @@ type Commande = {
   mode_paiement: string
   commande_parent_id: string | null
   entete_client: { denomination?: string }
-  lignes_commande: { produit_id: string; quantite: number }[]
+  lignes_commande: { produit_id: string; quantite: number; produits?: { id: string; nom: string; categorie: string; filiere?: FiliereCode } | null }[]
 }
 
 const PICTOS = {
@@ -35,18 +38,26 @@ const PICTOS = {
 /** File des commandes à traiter par le superviseur, les plus anciennes d'abord, avec un indicateur de capacité. */
 export default async function ApprobationsPage() {
   await exigerLecture('/supervision/approbations', ['superviseur', 'administrateur'])
-  const supabase = await createClient()
+  const [ctx, supabase] = await Promise.all([getContexte(), createClient()])
   const [{ data }, { data: producteurs }] = await Promise.all([
     supabase
       .from('commandes')
-      .select('id, numero, statut, producteur_id, montant_total, soumise_le, date_souhaitee, date_livraison_convenue, mode_paiement, commande_parent_id, entete_client, lignes_commande(produit_id, quantite)')
+      .select('id, numero, statut, producteur_id, montant_total, soumise_le, date_souhaitee, date_livraison_convenue, mode_paiement, commande_parent_id, entete_client, lignes_commande(produit_id, quantite, produits(id, nom, categorie, filiere))')
       .in('statut', STATUTS_A_TRAITER)
       .order('soumise_le')
       .limit(100)
       .returns<Commande[]>(),
     supabase.from('entreprises').select('id, denomination').eq('type', 'producteur'),
   ])
-  const commandes = data ?? []
+
+  const filiereCible = ctx.filiereActive
+  const toutesCommandes = data ?? []
+  const commandes = filiereCible === 'toutes'
+    ? toutesCommandes
+    : toutesCommandes.filter((c) =>
+        c.lignes_commande.some((l) => determinerFiliere(l.produits) === filiereCible)
+      )
+
   const noms = new Map((producteurs ?? []).map((p) => [p.id, p.denomination]))
 
   // Pire niveau de risque parmi les lignes de chaque commande
@@ -66,18 +77,28 @@ export default async function ApprobationsPage() {
   return (
     <>
       <PageHeader
-        titre="Approbations"
-        description="Commandes à approuver (avec la date de livraison convenue), mettre en attente, réorienter, répartir ou refuser. Les plus anciennes en premier."
+        titre={filiereCible === 'toutes' ? 'Approbations' : `Approbations · ${FILIERES[filiereCible].nomCourt}`}
+        description={
+          filiereCible === 'toutes'
+            ? 'Commandes à approuver toutes filières confondues (Céréale, Maraîchage, Fruitier). Les plus anciennes en premier.'
+            : `Supervision des approbations dédiée à la filière ${FILIERES[filiereCible].nom}. Les plus anciennes en premier.`
+        }
       />
       {commandes.length === 0 ? (
-        <Vide titre="Aucune commande à traiter">Toutes les commandes soumises ont été traitées.</Vide>
+        <Vide titre="Aucune commande à traiter">
+          {filiereCible === 'toutes'
+            ? 'Toutes les commandes soumises ont été traitées.'
+            : `Aucune commande en attente pour la filière ${FILIERES[filiereCible].nom}.`}
+        </Vide>
       ) : (
         <ul className="divide-y divide-surface-border overflow-hidden rounded-xl border border-surface-border bg-surface">
           {commandes.map((c, i) => {
             const picto = PICTOS[risques[i] as keyof typeof PICTOS]
             const statut = STATUTS_COMMANDE[c.statut]
+            const filiereCmd = determinerFiliere(c.lignes_commande[0]?.produits)
+            const fTheme = FILIERES[filiereCmd]?.theme
             return (
-              <li key={c.id}>
+              <li key={c.id} className={cn('transition-colors', fTheme?.borderLeftClass)}>
                 <Link href={`/supervision/approbations/${c.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-surface-muted">
                   <picto.Icone className={`h-5 w-5 shrink-0 ${picto.classe}`} aria-label={picto.libelle} />
                   <div className="min-w-0 flex-1">
@@ -92,6 +113,7 @@ export default async function ApprobationsPage() {
                     </p>
                   </div>
                   <span className="hidden font-semibold tabular-nums sm:block">{formatMontant(c.montant_total)}</span>
+                  <FiliereBadge filiere={filiereCmd} taille="petite" court />
                   <Badge ton={statut.ton}>{statut.libelle}</Badge>
                   <ChevronRight className="h-4 w-4 shrink-0 text-foreground-muted" aria-hidden />
                 </Link>
@@ -100,6 +122,7 @@ export default async function ApprobationsPage() {
           })}
         </ul>
       )}
+
     </>
   )
 }

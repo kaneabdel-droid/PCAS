@@ -41,9 +41,12 @@ import { signOut } from '@/app/auth/actions'
 import { Cloche } from '@/components/Cloche'
 import { Embleme } from '@/components/Logo'
 import { ThemeSwitcher } from '@/components/ThemeSwitcher'
+import { SelecteurFiliere } from '@/components/filieres/SelecteurFiliere'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { MENUS, type MenuItem } from '@/lib/menus'
 import { permissionMenu, type Matrice } from '@/lib/permissions'
 import type { RoleBase } from '@/lib/roles'
+import type { FiliereCode, FiliereFiltre } from '@/lib/filieres'
 
 // Icônes par href : tenues à part du registre lib/menus.ts, qui reste sans dépendance d'affichage.
 const ICONES: Record<string, typeof LayoutDashboard> = {
@@ -101,6 +104,9 @@ export function AppShell({
   permissions,
   utilisateurId,
   nonLues,
+  filiereActive = 'toutes',
+  filieresActivesPlateforme = ['cereale', 'maraichage', 'fruitier'],
+  userFiliere = null,
   children,
 }: {
   utilisateur: string
@@ -110,6 +116,9 @@ export function AppShell({
   permissions: Matrice
   utilisateurId: string
   nonLues: number
+  filiereActive?: FiliereFiltre
+  filieresActivesPlateforme?: FiliereCode[]
+  userFiliere?: FiliereCode | null
   children: React.ReactNode
 }) {
   const [ouvert, setOuvert] = useState(false)
@@ -204,6 +213,11 @@ export function AppShell({
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-sidebar-foreground">{utilisateur}</p>
           <p className="truncate text-xs text-sidebar-muted">{roleLibelle}</p>
+          {filiereActive !== 'toutes' && (
+            <div className="mt-1.5">
+              <FiliereBadge filiere={filiereActive} taille="petite" court />
+            </div>
+          )}
         </div>
       </div>
       <ThemeSwitcher />
@@ -226,7 +240,7 @@ export function AppShell({
   )
 
   return (
-    <div className="flex min-h-screen flex-1">
+    <div className="flex min-h-screen flex-1" data-filiere={filiereActive}>
       {/* Bureau : barre latérale fixe */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar lg:flex">
         {entete}
@@ -235,6 +249,34 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Ligne d'ambiance visuelle aux couleurs de la filière active */}
+        <div
+          className={cn(
+            'h-1 w-full shrink-0 transition-all duration-300 bg-gradient-to-r',
+            filiereActive === 'cereale' && 'from-amber-500 via-yellow-500 to-amber-600',
+            filiereActive === 'maraichage' && 'from-emerald-600 via-teal-500 to-green-500',
+            filiereActive === 'fruitier' && 'from-rose-600 via-orange-500 to-rose-500',
+            filiereActive === 'toutes' && 'from-primary via-emerald-600 to-accent'
+          )}
+          role="presentation"
+          aria-hidden
+        />
+
+        {/* Bureau : barre supérieure avec sélecteur de filière */}
+        <header className="sticky top-0 z-20 hidden items-center justify-between border-b border-surface-border bg-surface/90 px-6 py-2.5 backdrop-blur lg:flex">
+          <div className="flex items-center gap-3">
+            <SelecteurFiliere
+              filiereActive={filiereActive}
+              filieresActivesPlateforme={filieresActivesPlateforme}
+              userFiliere={userFiliere}
+              role={role}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Cloche key={nonLues} utilisateurId={utilisateurId} nonLues={nonLues} />
+          </div>
+        </header>
+
         {/* Mobile et tablette : barre supérieure */}
         <header className="sticky top-0 z-30 flex items-center gap-3 bg-sidebar px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
           <Embleme className="h-8 w-8" />
@@ -244,6 +286,18 @@ export function AppShell({
           </div>
           <Cloche key={nonLues} utilisateurId={utilisateurId} nonLues={nonLues} />
         </header>
+
+        {/* Mobile : barre de sélection de filière si multi-filières ou superviseur dédié */}
+        {(filieresActivesPlateforme.length > 1 || (userFiliere && role === 'superviseur')) && (
+          <div className="border-b border-surface-border bg-surface px-4 py-2 lg:hidden">
+            <SelecteurFiliere
+              filiereActive={filiereActive}
+              filieresActivesPlateforme={filieresActivesPlateforme}
+              userFiliere={userFiliere}
+              role={role}
+            />
+          </div>
+        )}
 
         {ouvert && (
           <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">

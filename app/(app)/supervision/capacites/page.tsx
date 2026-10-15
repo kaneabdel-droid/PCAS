@@ -2,8 +2,11 @@ import type { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/card'
 import { Vide } from '@/components/ui/champ'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { Input, Select } from '@/components/ui/input'
 import { exigerLecture } from '@/lib/droits'
+import { FILIERES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
+import { getContexte } from '@/lib/session'
 import { formatQuantite } from '@/lib/stocks'
 import { analyser, type Analyse } from '@/lib/supervision'
 import { cn, dateDans } from '@/lib/utils'
@@ -14,12 +17,24 @@ export const metadata: Metadata = { title: 'Capacités des producteurs' }
 /** Production attendue et engagements de chaque producteur pour un produit, à une date donnée. */
 export default async function CapacitesPage({ searchParams }: { searchParams: Promise<{ produit?: string; date?: string }> }) {
   await exigerLecture('/supervision/capacites', ['superviseur', 'administrateur'])
-  const f = await searchParams
+  const [ctx, f, supabase] = await Promise.all([getContexte(), searchParams, createClient()])
   const aujourdhui = new Date().toISOString().slice(0, 10)
   const date = f.date && f.date >= aujourdhui ? f.date : dateDans(30)
-  const supabase = await createClient()
-  const { data: produits } = await supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom')
+
+  const { data: tousProduits } = await supabase
+    .from('produits')
+    .select('id, nom, unite, categorie, filiere')
+    .eq('nature', 'produit_fini')
+    .eq('actif', true)
+    .order('nom')
+
+  const filiereCible = ctx.filiereActive
+  const produits = (tousProduits ?? []).filter((p) =>
+    filiereCible === 'toutes' ? true : determinerFiliere(p) === filiereCible
+  )
+
   const produit = (produits ?? []).find((p) => p.id === f.produit) ?? (produits ?? [])[0]
+
 
   let lignes: { id: string; denomination: string; region: string | null; analyse: Analyse }[] = []
   if (produit) {
@@ -51,17 +66,24 @@ export default async function CapacitesPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <PageHeader
-        titre="Capacités des producteurs"
-        description="Stock disponible, production attendue d’ici la date (capacité de production, limitée par la matière première pour les produits transformés) et engagements déjà approuvés."
+        titre={filiereCible === 'toutes' ? 'Capacités des producteurs' : `Capacités · ${FILIERES[filiereCible].nomCourt}`}
+        description={
+          filiereCible === 'toutes'
+            ? 'Stock disponible, production attendue d’ici la date et engagements déjà approuvés (toutes filières).'
+            : `Supervision des capacités des producteurs de la filière ${FILIERES[filiereCible].nom}.`
+        }
       />
-      <form method="get" className="mb-6 flex flex-wrap items-end gap-3">
+      <form method="get" className="mb-6 flex flex-wrap items-center gap-3">
         <Select name="produit" defaultValue={produit?.id} aria-label="Produit" className="w-auto min-w-56">
           {(produits ?? []).map((p) => (
             <option key={p.id} value={p.id}>
-              {p.nom}
+              {p.nom} ({p.unite})
             </option>
           ))}
         </Select>
+        {produit && (
+          <FiliereBadge filiere={determinerFiliere(produit)} taille="normale" />
+        )}
         <label className="flex items-center gap-2 text-sm">
           au
           <Input type="date" name="date" min={aujourdhui} defaultValue={date} className="w-auto" />
@@ -70,6 +92,7 @@ export default async function CapacitesPage({ searchParams }: { searchParams: Pr
           Afficher
         </Button>
       </form>
+
 
       {lignes.length === 0 ? (
         <Vide titre="Aucun producteur pour ce produit">Aucune capacité, aucun stock ni aucune offre déclarés.</Vide>

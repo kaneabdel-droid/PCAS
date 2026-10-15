@@ -5,12 +5,15 @@ import { Onglets } from '@/components/Onglets'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { STATUTS_COMMANDE } from '@/lib/commandes'
 import { exigerLecture } from '@/lib/droits'
-import { formatDate, formatMontant } from '@/lib/utils'
+import { FILIERES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
+import { cn, formatDate, formatMontant } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Commandes' }
+
 
 type Ligne = {
   id: string
@@ -40,15 +43,24 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
   const [{ data }, { data: producteurs }] = await Promise.all([
     supabase
       .from('commandes')
-      .select('id, numero, statut, producteur_id, montant_total, soumise_le, date_souhaitee, date_livraison_convenue, entete_client')
+      .select('id, numero, statut, producteur_id, montant_total, soumise_le, date_souhaitee, date_livraison_convenue, entete_client, lignes_commande(produit_id, produits(id, nom, categorie, filiere))')
       .order('soumise_le', { ascending: false })
       .limit(500)
-      .returns<Ligne[]>(),
+      .returns<(Ligne & { lignes_commande?: { produit_id: string; produits?: { id: string; nom: string; categorie: string; filiere?: import('@/lib/filieres').FiliereCode } | null }[] })[]>(),
     supabase.rpc('producteurs_publics').select('id, denomination'),
   ])
-  const commandes = data ?? []
+
+  const filiereCible = ctx.filiereActive
+  const toutesCommandes = data ?? []
+  const commandes = filiereCible === 'toutes'
+    ? toutesCommandes
+    : toutesCommandes.filter((c) =>
+        c.lignes_commande?.some((l) => determinerFiliere(l.produits) === filiereCible)
+      )
+
   const noms = new Map(((producteurs ?? []) as { id: string; denomination: string }[]).map((p) => [p.id, p.denomination]))
   const affichees = commandes.filter((c) => groupe.statuts.includes(c.statut))
+
 
   const description =
     ctx.role === 'client'
@@ -80,8 +92,11 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
           {affichees.map((c) => {
             const statut = STATUTS_COMMANDE[c.statut]
             const partie = ctx.role === 'client' ? noms.get(c.producteur_id) : ctx.role === 'producteur' ? c.entete_client.denomination : `${c.entete_client.denomination} → ${noms.get(c.producteur_id) ?? '…'}`
+            const filiere = c.lignes_commande?.[0]?.produits ? determinerFiliere(c.lignes_commande[0].produits) : null
+            const fTheme = filiere ? FILIERES[filiere]?.theme : null
+
             return (
-              <li key={c.id}>
+              <li key={c.id} className={cn('transition-colors', fTheme?.borderLeftClass)}>
                 <Link href={`/commandes/${c.id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-surface-muted">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">
@@ -97,6 +112,9 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
                     </p>
                   </div>
                   <span className="hidden font-semibold tabular-nums sm:block">{formatMontant(c.montant_total)}</span>
+                  {filiere && (
+                    <FiliereBadge filiere={filiere} taille="petite" court />
+                  )}
                   <Badge ton={statut.ton}>{statut.libelle}</Badge>
                   <ChevronRight className="h-4 w-4 shrink-0 text-foreground-muted" aria-hidden />
                 </Link>
@@ -105,6 +123,7 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
           })}
         </ul>
       )}
+
     </>
   )
 }

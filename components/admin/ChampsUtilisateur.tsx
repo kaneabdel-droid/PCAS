@@ -36,6 +36,7 @@ export function ChampsUtilisateur({
     role_base: RoleBase
     profil_id: string | null
     entreprise_id: string | null
+    filiere?: string | null
     signataire: boolean
   }
   emailModifiable: boolean
@@ -74,7 +75,7 @@ export function ChampsUtilisateur({
         <Input id="telephone" name="telephone" type="tel" defaultValue={valeurs?.telephone ?? ''} />
       </Champ>
       <Champ id="fonction" label="Fonction">
-        <Input id="fonction" name="fonction" defaultValue={valeurs?.fonction ?? ''} placeholder="Ex. Directeur commercial" />
+        <Input id="fonction" name="fonction" defaultValue={valeurs?.fonction ?? ''} placeholder="Ex. Superviseur Céréales" />
       </Champ>
       <Champ id="role_base" label="Rôle" requis>
         <Select id="role_base" name="role_base" required value={role} onChange={(e) => setRole(e.target.value as RoleBase)}>
@@ -88,6 +89,20 @@ export function ChampsUtilisateur({
           ))}
         </Select>
       </Champ>
+      {role === 'superviseur' && (
+        <Champ
+          id="filiere"
+          label="Filière de supervision"
+          aide="Affectez ce superviseur à une filière spécifique ou laissez vide pour une supervision globale (toutes filières)."
+        >
+          <Select id="filiere" name="filiere" defaultValue={valeurs?.filiere ?? ''}>
+            <option value="">Toutes les filières (Supervision transversale)</option>
+            <option value="cereale">Céréales & Grains</option>
+            <option value="maraichage">Maraîchage & Légumes</option>
+            <option value="fruitier">Arboriculture & Fruits</option>
+          </Select>
+        </Champ>
+      )}
       {!plateforme && role !== '' && (
         <Champ id="entreprise_id" label="Entreprise" requis>
           <Select id="entreprise_id" name="entreprise_id" required defaultValue={entrepriseIdInitiale ?? ''} key={role}>

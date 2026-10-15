@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Card, PageHeader } from '@/components/ui/card'
 import { ListeATraiter, Tuiles } from '@/components/tableau-de-bord/Tuiles'
+import { HubFilieres } from '@/components/filieres/HubFilieres'
 import { getContexte } from '@/lib/session'
 import { donneesTableauDeBord } from '@/lib/tableau-de-bord'
 import { LIBELLES_ROLES, type RoleBase } from '@/lib/roles'
@@ -51,6 +52,12 @@ export default async function TableauDeBordPage() {
       />
 
       <div className="mb-8 space-y-6">
+        <HubFilieres
+          filiereActive={ctx.filiereActive}
+          filieresActivesPlateforme={ctx.filieresActivesPlateforme}
+          userFiliere={ctx.filiere}
+          role={ctx.role}
+        />
         <Tuiles tuiles={tuiles} />
         <div className="grid gap-6 lg:grid-cols-2">
           {listes.map((l) => (

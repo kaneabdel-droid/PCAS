@@ -8,6 +8,7 @@ import { Vide } from '@/components/ui/champ'
 import { Input, Select } from '@/components/ui/input'
 import { exigerLecture } from '@/lib/droits'
 import type { OffreMarche } from '@/lib/marche'
+import { FILIERES, filiereDeCategorie } from '@/lib/filieres'
 import { chargerReferentielsProduit } from '@/lib/catalogue'
 import { REGIONS } from '@/lib/referentiels'
 import { createClient } from '@/utils/supabase/server'
@@ -47,13 +48,22 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
       : Promise.resolve({ count: 0 }),
     chargerReferentielsProduit(supabase),
   ])
-  const offres = (data ?? []) as unknown as OffreMarche[]
+
+  const filiereCible = ctx.filiereActive
+  const toutesOffres = (data ?? []) as unknown as OffreMarche[]
+  const offres = filiereCible === 'toutes'
+    ? toutesOffres
+    : toutesOffres.filter((o) => filiereDeCategorie(o.categorie) === filiereCible)
 
   return (
     <>
       <PageHeader
-        titre="Offres des producteurs"
-        description="Produits agricoles du Sénégal disponibles maintenant ou à une date annoncée. Les prix sont en FCFA par unité de vente."
+        titre={filiereCible === 'toutes' ? 'Offres des producteurs' : `Offres · ${FILIERES[filiereCible].nomCourt}`}
+        description={
+          filiereCible === 'toutes'
+            ? 'Produits agricoles du Sénégal disponibles maintenant ou à une date annoncée. Les prix sont en FCFA par unité de vente.'
+            : `Place de marché dédiée aux produits de la filière ${FILIERES[filiereCible].nom}.`
+        }
       >
         {ctx.role === 'client' && (
           <Button asChild variant="outline">
@@ -63,6 +73,7 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
           </Button>
         )}
       </PageHeader>
+
 
       <form method="get" className="mb-6 grid gap-3 rounded-xl border border-surface-border bg-surface p-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto]">
         <div className="relative sm:col-span-2 lg:col-span-1">

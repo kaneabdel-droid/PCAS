@@ -2,17 +2,28 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarClock, MapPin, Sprout } from 'lucide-react'
 import { LogoEntreprise } from '@/components/entreprise/LogoEntreprise'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
+import { FILIERES, filiereDeCategorie } from '@/lib/filieres'
 import { formatQuantite, urlPhotoOffre } from '@/lib/stocks'
-import { formatDate, formatMontant } from '@/lib/utils'
+import { cn, formatDate, formatMontant } from '@/lib/utils'
 import type { OffreMarche } from '@/lib/marche'
 
 /** Carte d'une offre sur la place de marché. */
 export function CarteMarche({ offre }: { offre: OffreMarche }) {
+  const filiere = filiereDeCategorie(offre.categorie)
+  const f = FILIERES[filiere]
+
   return (
     <Link
       href={`/marche/${offre.id}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-surface-border bg-surface transition-shadow hover:shadow-lg"
+      className={cn(
+        'group flex h-full flex-col overflow-hidden rounded-xl border border-surface-border bg-surface transition-all duration-200',
+        f.theme.cardHover
+      )}
     >
+      {/* Ligne d'accent supérieure aux couleurs de la filière */}
+      <div className={cn('h-1 w-full shrink-0', f.theme.cardTopStripe)} aria-hidden />
+
       <div className="relative aspect-[4/3] bg-surface-muted">
         {offre.photos[0] ? (
           <Image
@@ -36,7 +47,11 @@ export function CarteMarche({ offre }: { offre: OffreMarche }) {
             </span>
           )}
         </div>
+        <div className="absolute right-3 top-3">
+          <FiliereBadge filiere={filiere} taille="petite" court />
+        </div>
       </div>
+
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="min-w-0">
           <p className="truncate font-heading font-semibold">{offre.produit_nom}</p>

@@ -13,7 +13,9 @@ import {
   supprimerUtilisateur,
 } from '@/app/(app)/admin/utilisateurs/actions'
 import { optionsUtilisateur } from '@/lib/admin-listes'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { LIBELLES_ROLES, type RoleBase } from '@/lib/roles'
+import type { FiliereCode } from '@/lib/filieres'
 import { getContexte } from '@/lib/session'
 import { formatDate } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
@@ -30,6 +32,7 @@ type Fiche = {
   role_base: RoleBase
   profil_id: string | null
   entreprise_id: string | null
+  filiere: FiliereCode | null
   actif: boolean
   signataire: boolean
   created_at: string
@@ -42,7 +45,7 @@ export default async function UtilisateurPage({ params }: { params: Promise<{ id
   const [{ data: u }, options, ctx] = await Promise.all([
     supabase
       .from('utilisateurs')
-      .select('id, email, nom_complet, telephone, fonction, role_base, profil_id, entreprise_id, actif, signataire, created_at, entreprises(denomination)')
+      .select('id, email, nom_complet, telephone, fonction, role_base, profil_id, entreprise_id, filiere, actif, signataire, created_at, entreprises(denomination)')
       .eq('id', id)
       .maybeSingle<Fiche>(),
     optionsUtilisateur(),
@@ -66,11 +69,13 @@ export default async function UtilisateurPage({ params }: { params: Promise<{ id
             {derniereConnexion ? `dernière connexion le ${formatDate(derniereConnexion)}` : 'invitation non encore acceptée'}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {u.filiere && <FiliereBadge filiere={u.filiere} />}
           <Badge ton="primaire">{LIBELLES_ROLES[u.role_base]}</Badge>
           {u.actif ? <Badge ton="succes">Actif</Badge> : <Badge ton="danger">Désactivé</Badge>}
         </div>
       </div>
+
 
       <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
         <Card>

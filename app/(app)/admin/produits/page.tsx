@@ -13,8 +13,11 @@ import {
   supprimerReferentiel,
   supprimerTransformation,
 } from '@/app/(app)/admin/produits/actions'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { chargerReferentielsProduit, type Referentiel } from '@/lib/catalogue'
+import { FILIERES, FILIERES_CODES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
 import { NATURES_PRODUIT } from '@/lib/referentiels'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Catalogue produits' }
@@ -23,6 +26,7 @@ type Produit = {
   id: string
   nom: string
   categorie: string
+  filiere?: FiliereCode
   nature: 'matiere_premiere' | 'produit_fini'
   unite: string
   description: string | null
@@ -37,10 +41,20 @@ type Transformation = {
 
 function ChampsProduit({ produit, categories, unites }: { produit?: Produit; categories: Referentiel[]; unites: Referentiel[] }) {
   const suffixe = produit?.id ?? 'nouveau'
+  const filiereInitiale = produit ? determinerFiliere(produit) : 'cereale'
   return (
     <GrilleChamps>
       <Champ id={`nom-${suffixe}`} label="Nom" requis>
         <Input id={`nom-${suffixe}`} name="nom" required defaultValue={produit?.nom} />
+      </Champ>
+      <Champ id={`filiere-${suffixe}`} label="Filière agricole" requis aide="Périmètre de supervision et identité visuelle.">
+        <Select id={`filiere-${suffixe}`} name="filiere" required defaultValue={filiereInitiale}>
+          {FILIERES_CODES.map((code) => (
+            <option key={code} value={code}>
+              {FILIERES[code].nom}
+            </option>
+          ))}
+        </Select>
       </Champ>
       <Champ id={`categorie-${suffixe}`} label="Catégorie" requis>
         <Select id={`categorie-${suffixe}`} name="categorie" required defaultValue={produit?.categorie ?? ''}>
@@ -74,6 +88,7 @@ function ChampsProduit({ produit, categories, unites }: { produit?: Produit; cat
     </GrilleChamps>
   )
 }
+
 
 function ListeReferentiel({
   table,
@@ -126,7 +141,7 @@ function ListeReferentiel({
 export default async function ProduitsPage() {
   const supabase = await createClient()
   const [{ data: produitsData }, { data: transformationsData }, referentiels] = await Promise.all([
-    supabase.from('produits').select('id, nom, categorie, nature, unite, description, actif').order('categorie').order('nom').returns<Produit[]>(),
+    supabase.from('produits').select('id, nom, categorie, filiere, nature, unite, description, actif').order('categorie').order('nom').returns<Produit[]>(),
     supabase
       .from('transformations')
       .select('id, rendement, matiere:produits!transformations_matiere_id_fkey(nom, unite), produit:produits!transformations_produit_id_fkey(nom, unite)')
@@ -166,15 +181,20 @@ export default async function ProduitsPage() {
               <ul className="divide-y divide-surface-border overflow-hidden rounded-xl border border-surface-border bg-surface">
                 {produits
                   .filter((p) => p.categorie === categorie)
-                  .map((p) => (
-                    <li key={p.id}>
-                      <details className="group">
-                        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-surface-muted">
-                          <span className="flex-1 font-medium">{p.nom}</span>
-                          <span className="text-sm text-foreground-muted">{p.unite}</span>
-                          <Badge ton={p.nature === 'matiere_premiere' ? 'alerte' : 'primaire'}>{NATURES_PRODUIT[p.nature]}</Badge>
-                          {!p.actif && <Badge ton="danger">Inactif</Badge>}
-                        </summary>
+                  .map((p) => {
+                    const filiere = determinerFiliere(p)
+                    const f = FILIERES[filiere]
+                    return (
+                      <li key={p.id} className={cn('transition-colors', f.theme.borderLeftClass)}>
+                        <details className="group">
+                          <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-surface-muted">
+                            <span className="flex-1 font-medium">{p.nom}</span>
+                            <FiliereBadge filiere={filiere} taille="petite" court />
+                            <span className="text-sm text-foreground-muted">{p.unite}</span>
+                            <Badge ton={p.nature === 'matiere_premiere' ? 'alerte' : 'primaire'}>{NATURES_PRODUIT[p.nature]}</Badge>
+                            {!p.actif && <Badge ton="danger">Inactif</Badge>}
+                          </summary>
+
                         <div className="border-t border-surface-border bg-surface-muted/50 p-4">
                           <FormulaireAction action={modifierProduit} libelle="Enregistrer">
                             <input type="hidden" name="produit_id" value={p.id} />
@@ -187,7 +207,8 @@ export default async function ProduitsPage() {
                         </div>
                       </details>
                     </li>
-                  ))}
+                  )
+                })}
               </ul>
             </section>
           ))}

@@ -8,8 +8,10 @@ import { Badge, Champ, GrilleChamps, Vide } from '@/components/ui/champ'
 import { Input, Select } from '@/components/ui/input'
 import { enregistrerInventaire, enregistrerMouvement } from '@/app/(app)/stocks/actions'
 import { droitsEcran } from '@/lib/droits'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
+import { FILIERES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
 import { MOTIFS, MOTIFS_SAISIE, TYPES_MOUVEMENT, formatQuantite, type Nature } from '@/lib/stocks'
-import { formatDate } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { createClient } from '@/utils/supabase/server'
 
 type LigneStock = {
@@ -20,7 +22,7 @@ type LigneStock = {
   quantite_disponible: number
   updated_at: string
   sites_production: { nom: string } | null
-  produits: { nom: string; unite: string }
+  produits: { nom: string; unite: string; categorie?: string | null; filiere?: FiliereCode | null }
   entreprises: { denomination: string } | null
 }
 
@@ -70,7 +72,7 @@ export async function PageStocks({
 
   let requeteStocks = supabase
     .from('stocks')
-    .select('site_id, produit_id, quantite_physique, quantite_reservee, quantite_disponible, updated_at, sites_production(nom), produits!inner(nom, unite), entreprises(denomination)')
+    .select('site_id, produit_id, quantite_physique, quantite_reservee, quantite_disponible, updated_at, sites_production(nom), produits!inner(nom, unite, categorie, filiere), entreprises(denomination)')
     .eq('produits.nature', nature)
     .order('updated_at', { ascending: false })
   let requeteMouvements = supabase
@@ -104,7 +106,12 @@ export async function PageStocks({
         ? supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom')
         : Promise.resolve({ data: [] as { id: string; nom: string; unite: string }[] }),
     ])
-  const stocks = stocksData ?? []
+
+  const filiereCible = ctx.filiereActive
+  const tousStocks = stocksData ?? []
+  const stocks = filiereCible === 'toutes'
+    ? tousStocks
+    : tousStocks.filter((s) => determinerFiliere(s.produits) === filiereCible)
   const mouvements = mouvementsData ?? []
   const produits = produitsData ?? []
   const sitesActifs = producteur ? (sitesData ?? []).filter((s) => s.actif) : []
@@ -208,6 +215,7 @@ export async function PageStocks({
                   {!producteur && <th className="px-4 py-2.5 font-medium">Producteur</th>}
                   <th className="px-4 py-2.5 font-medium">Site</th>
                   <th className="px-4 py-2.5 font-medium">Produit</th>
+                  <th className="px-4 py-2.5 font-medium">Filière</th>
                   <th className="px-4 py-2.5 text-right font-medium">Physique</th>
                   <th className="px-4 py-2.5 text-right font-medium">Réservé</th>
                   <th className="px-4 py-2.5 text-right font-medium">Disponible</th>
@@ -215,17 +223,28 @@ export async function PageStocks({
                 </tr>
               </thead>
               <tbody>
-                {stocks.map((s) => (
-                  <tr key={`${s.site_id}-${s.produit_id}`} className="border-t border-surface-border">
-                    {!producteur && <td className="px-4 py-2.5">{s.entreprises?.denomination}</td>}
-                    <td className="px-4 py-2.5">{s.sites_production?.nom}</td>
-                    <td className="px-4 py-2.5 font-medium">{s.produits.nom}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">{formatQuantite(s.quantite_physique, s.produits.unite)}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-foreground-muted">{formatQuantite(s.quantite_reservee)}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold tabular-nums">{formatQuantite(s.quantite_disponible)}</td>
-                    <td className="px-4 py-2.5 text-foreground-muted">{formatDate(s.updated_at)}</td>
-                  </tr>
-                ))}
+                {stocks.map((s) => {
+                  const filiere = determinerFiliere(s.produits)
+                  const fTheme = FILIERES[filiere]?.theme
+
+                  return (
+                    <tr
+                      key={`${s.site_id}-${s.produit_id}`}
+                      className={cn('border-t border-surface-border transition-colors', fTheme?.borderLeftClass)}
+                    >
+                      {!producteur && <td className="px-4 py-2.5">{s.entreprises?.denomination}</td>}
+                      <td className="px-4 py-2.5">{s.sites_production?.nom}</td>
+                      <td className="px-4 py-2.5 font-medium">{s.produits.nom}</td>
+                      <td className="px-4 py-2.5">
+                        <FiliereBadge filiere={filiere} taille="petite" court />
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{formatQuantite(s.quantite_physique, s.produits.unite)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-foreground-muted">{formatQuantite(s.quantite_reservee)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums">{formatQuantite(s.quantite_disponible)}</td>
+                      <td className="px-4 py-2.5 text-foreground-muted">{formatDate(s.updated_at)}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

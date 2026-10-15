@@ -3,6 +3,7 @@ import type { Tuile } from '@/components/tableau-de-bord/Tuiles'
 import type { Contexte } from '@/lib/session'
 import { STATUTS_A_TRAITER } from '@/lib/supervision'
 import { formatDate, formatMontant } from '@/lib/utils'
+import { FILIERES, determinerFiliere, type FiliereCode } from '@/lib/filieres'
 
 // Chiffres clés et listes « à traiter » du tableau de bord, selon le profil. Chaque requête passe par la RLS : un même
 // comptage donne les commandes du client, du producteur, de la banque ou de toute la plateforme selon l'utilisateur.
@@ -25,6 +26,11 @@ function debutDuMois() {
 const aujourdhui = () => new Date().toISOString().slice(0, 10)
 
 type Commande = { id: string; numero: string; montant_total: number; date_livraison_convenue: string | null; entete_client: { denomination?: string } }
+
+type CommandeAvecLignes = Commande & {
+  lignes_commande?: { produit_id: string; produits?: { id: string; nom: string; categorie: string; filiere?: FiliereCode } | null }[]
+}
+
 
 async function sommeEcheances(statuts: string[]) {
   const supabase = await createClient()
@@ -187,8 +193,14 @@ export async function donneesTableauDeBord(ctx: Contexte): Promise<{ tuiles: Tui
   }
 
   // Superviseur et administrateur
-  const [{ data: aTraiter }, { count: litiges }, { data: enRetardLivraison }, enRetard, { data: factures }, { count: demandes }] = await Promise.all([
-    supabase.from('commandes').select('id, numero, montant_total, date_livraison_convenue, entete_client').in('statut', STATUTS_A_TRAITER).order('soumise_le').returns<Commande[]>(),
+
+  const [{ data: aTraiterData }, { count: litiges }, { data: enRetardLivraison }, enRetard, { data: factures }, { count: demandes }] = await Promise.all([
+    supabase
+      .from('commandes')
+      .select('id, numero, montant_total, date_livraison_convenue, entete_client, lignes_commande(produit_id, produits(id, nom, categorie, filiere))')
+      .in('statut', STATUTS_A_TRAITER)
+      .order('soumise_le')
+      .returns<CommandeAvecLignes[]>(),
     supabase.from('bons_reception').select('id', { count: 'exact', head: true }).eq('statut', 'en_litige'),
     supabase.from('commandes').select('id, numero, montant_total, date_livraison_convenue, entete_client').in('statut', A_LIVRER).lt('date_livraison_convenue', jour).order('date_livraison_convenue').returns<Commande[]>(),
     sommeEcheances(['en_retard']),
@@ -197,10 +209,21 @@ export async function donneesTableauDeBord(ctx: Contexte): Promise<{ tuiles: Tui
       ? supabase.from('demandes_acces').select('id', { count: 'exact', head: true }).eq('statut', 'nouvelle')
       : Promise.resolve({ count: 0 }),
   ])
+
+  const aTraiter = ctx.filiereActive === 'toutes'
+    ? (aTraiterData ?? [])
+    : (aTraiterData ?? []).filter((c) =>
+        c.lignes_commande?.some((lc) => determinerFiliere(lc.produits) === ctx.filiereActive)
+      )
+
   const ventesMois = (factures ?? []).reduce((s, f) => s + Number(f.montant_total), 0)
+  const libelleApprobation = ctx.filiereActive === 'toutes'
+    ? 'Commandes à approuver'
+    : `À approuver (${FILIERES[ctx.filiereActive].nomCourt})`
+
   return {
     tuiles: [
-      { libelle: 'Commandes à approuver', valeur: String(aTraiter?.length ?? 0), lien: '/supervision/approbations', alerte: (aTraiter?.length ?? 0) > 0 },
+      { libelle: libelleApprobation, valeur: String(aTraiter.length), lien: '/supervision/approbations', alerte: aTraiter.length > 0 },
       { libelle: 'Litiges de réception', valeur: String(litiges ?? 0), lien: '/supervision/litiges', alerte: (litiges ?? 0) > 0 },
       { libelle: 'Livraisons en retard', valeur: String(enRetardLivraison?.length ?? 0), detail: 'Date convenue dépassée', lien: '/commandes', alerte: (enRetardLivraison?.length ?? 0) > 0 },
       ctx.role === 'administrateur' && (demandes ?? 0) > 0
@@ -209,10 +232,10 @@ export async function donneesTableauDeBord(ctx: Contexte): Promise<{ tuiles: Tui
     ],
     listes: [
       {
-        titre: 'À approuver',
+        titre: libelleApprobation,
         lienTout: '/supervision/approbations',
-        vide: 'Aucune commande à traiter.',
-        elements: (aTraiter ?? []).slice(0, 5).map((c) => ({
+        vide: ctx.filiereActive === 'toutes' ? 'Aucune commande à traiter.' : `Aucune commande à traiter pour la filière ${FILIERES[ctx.filiereActive].nom}.`,
+        elements: aTraiter.slice(0, 5).map((c) => ({
           id: c.id,
           libelle: `${c.numero} · ${c.entete_client.denomination ?? ''}`,
           detail: 'Soumise au superviseur',
@@ -234,3 +257,4 @@ export async function donneesTableauDeBord(ctx: Contexte): Promise<{ tuiles: Tui
     ],
   }
 }
+

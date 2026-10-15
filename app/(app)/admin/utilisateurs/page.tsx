@@ -4,8 +4,10 @@ import { ChevronRight, Search, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
 import { Input, Select } from '@/components/ui/input'
 import { LIBELLES_ROLES, estRoleBase, type RoleBase } from '@/lib/roles'
+import type { FiliereCode } from '@/lib/filieres'
 import { createClient } from '@/utils/supabase/server'
 
 export const metadata: Metadata = { title: 'Utilisateurs' }
@@ -15,6 +17,7 @@ type Ligne = {
   email: string
   nom_complet: string
   role_base: RoleBase
+  filiere: FiliereCode | null
   actif: boolean
   signataire: boolean
   entreprises: { denomination: string } | null
@@ -26,7 +29,7 @@ export default async function UtilisateursPage({ searchParams }: { searchParams:
   const supabase = await createClient()
   let requete = supabase
     .from('utilisateurs')
-    .select('id, email, nom_complet, role_base, actif, signataire, entreprises(denomination), profils(libelle)')
+    .select('id, email, nom_complet, role_base, filiere, actif, signataire, entreprises(denomination), profils(libelle)')
     .order('nom_complet')
   if (q?.trim()) {
     const motif = `%${q.trim().replace(/[%_,()]/g, ' ')}%`
@@ -84,7 +87,8 @@ export default async function UtilisateursPage({ searchParams }: { searchParams:
                     {u.email} · {u.entreprises?.denomination ?? 'Plateforme PCAS'}
                   </p>
                 </div>
-                <div className="hidden flex-wrap justify-end gap-2 sm:flex">
+                <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex">
+                  {u.filiere && <FiliereBadge filiere={u.filiere} taille="petite" court />}
                   <Badge ton="primaire">{u.profils?.libelle ?? LIBELLES_ROLES[u.role_base]}</Badge>
                   {u.signataire && <Badge ton="info">Signataire</Badge>}
                   {!u.actif && <Badge ton="danger">Désactivé</Badge>}
@@ -95,6 +99,7 @@ export default async function UtilisateursPage({ searchParams }: { searchParams:
           ))}
         </ul>
       )}
+
     </>
   )
 }

@@ -7,6 +7,8 @@ import { coche, messageErreur, nombre, requis, texte, type Resultat } from '@/li
 import { NATURES_PRODUIT } from '@/lib/referentiels'
 import { chargerReferentielsProduit } from '@/lib/catalogue'
 
+import { determinerFiliere, estFiliereCode, filiereDeCategorie, type FiliereCode } from '@/lib/filieres'
+
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
 async function lireProduit(supabase: Supabase, fd: FormData) {
@@ -14,13 +16,16 @@ async function lireProduit(supabase: Supabase, fd: FormData) {
   const categorie = requis(fd, 'categorie')
   const nature = requis(fd, 'nature')
   const unite = requis(fd, 'unite')
+  const filiereBrute = texte(fd, 'filiere')
+  const filiere: FiliereCode = estFiliereCode(filiereBrute) ? filiereBrute : filiereDeCategorie(categorie)
   const { categories, unites } = await chargerReferentielsProduit(supabase)
   if (nom.length < 2) return { error: 'Le nom est obligatoire.' } as const
   if (!categories.some((c) => c.nom === categorie)) return { error: 'Catégorie inconnue.' } as const
   if (!(nature in NATURES_PRODUIT)) return { error: 'Nature inconnue.' } as const
   if (!unites.some((u) => u.nom === unite)) return { error: 'Unité inconnue.' } as const
-  return { valeurs: { nom, categorie, nature, unite, description: texte(fd, 'description') } } as const
+  return { valeurs: { nom, categorie, filiere, nature, unite, description: texte(fd, 'description') } } as const
 }
+
 
 export async function creerProduit(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }

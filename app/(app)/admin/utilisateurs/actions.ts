@@ -36,6 +36,9 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
   const entrepriseId = plateforme ? null : texte(fd, 'entreprise_id')
   if (!plateforme && !entrepriseId) return { error: 'Ce rôle doit être rattaché à une entreprise.' }
 
+  const filiereBrute = texte(fd, 'filiere')
+  const filiere = role === 'superviseur' && filiereBrute ? filiereBrute : null
+
   const admin = createAdminClient()
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { nom_complet: nomComplet },
@@ -58,6 +61,7 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
     role_base: role,
     profil_id: texte(fd, 'profil_id'),
     entreprise_id: entrepriseId,
+    filiere,
     signataire: !plateforme && coche(fd, 'signataire'),
   })
   if (erreurFiche) {
@@ -82,6 +86,9 @@ export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
   const entrepriseId = plateforme ? null : texte(fd, 'entreprise_id')
   if (!plateforme && !entrepriseId) return { error: 'Ce rôle doit être rattaché à une entreprise.' }
 
+  const filiereBrute = texte(fd, 'filiere')
+  const filiere = role === 'superviseur' && filiereBrute ? filiereBrute : null
+
   const ctx = await getContexte()
   if (id === ctx.userId && role !== 'administrateur') {
     return { error: 'Vous ne pouvez pas retirer votre propre rôle d’administrateur.' }
@@ -97,6 +104,7 @@ export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
       role_base: role,
       profil_id: texte(fd, 'profil_id'),
       entreprise_id: entrepriseId,
+      filiere,
       signataire: !plateforme && coche(fd, 'signataire'),
     })
     .eq('id', id)
