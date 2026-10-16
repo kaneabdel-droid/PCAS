@@ -17,8 +17,20 @@ export default async function NouveauBesoinPage({ searchParams }: { searchParams
   if (!ecrire) notFound()
   const { producteur } = await searchParams
   const supabase = await createClient()
+  let reqProduits = supabase
+    .from('produits')
+    .select('id, nom, unite')
+    .eq('nature', 'produit_fini')
+    .eq('actif', true)
+    .order('nom')
+  if (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0) {
+    reqProduits = reqProduits.in('filiere', ctx.entrepriseFilieres)
+  } else if (ctx.filiereActive !== 'toutes') {
+    reqProduits = reqProduits.eq('filiere', ctx.filiereActive)
+  }
+
   const [{ data: produits }, { data: producteurs }, { data: entreprise }] = await Promise.all([
-    supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom'),
+    reqProduits.returns<{ id: string; nom: string; unite: string }[]>(),
     supabase.rpc('producteurs_publics').select('id, denomination, region').order('denomination'),
     supabase.from('entreprises').select('region, commune').eq('id', ctx.entrepriseId!).maybeSingle(),
   ])

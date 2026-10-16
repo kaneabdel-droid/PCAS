@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import type { RoleBase, TypeEntreprise } from '@/lib/roles'
+import type { FiliereCode } from '@/lib/filieres'
 
 export type Entreprise = {
   id: string
@@ -20,6 +21,7 @@ export type Entreprise = {
   rccm: string | null
   representant_legal: string | null
   logo_path: string | null
+  filieres?: FiliereCode[]
   statut: 'actif' | 'suspendu'
   created_at: string
 }

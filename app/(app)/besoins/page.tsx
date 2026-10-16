@@ -49,13 +49,23 @@ export default async function BesoinsPage({ searchParams }: { searchParams: Prom
 
   if (ctx.role === 'producteur') {
     // Par défaut, les besoins portant sur les produits que le producteur offre ou sait produire.
-    const [{ data }, { data: offres }, { data: capacites }] = await Promise.all([
+    const [{ data }, { data: offres }, { data: capacites }, { data: prodFilieres }] = await Promise.all([
       supabase.rpc('besoins_publics').select('*').order('date_souhaitee'),
       supabase.from('offres').select('produit_id'),
       supabase.from('capacites_production').select('produit_id'),
+      supabase.from('produits').select('id, filiere'),
     ])
+    const filiereMap = new Map((prodFilieres ?? []).map((p) => [p.id, p.filiere as FiliereCode]))
     const mesProduits = new Set([...(offres ?? []), ...(capacites ?? [])].map((o) => o.produit_id))
-    const besoins = ((data ?? []) as unknown as BesoinPublic[]).filter((b) => f.tous === '1' || mesProduits.size === 0 || mesProduits.has(b.produit_id) || b.adresse_a_moi)
+    const besoins = ((data ?? []) as unknown as BesoinPublic[]).filter((b) => {
+      const prodFiliere = filiereMap.get(b.produit_id)
+      if (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0 && prodFiliere) {
+        if (!ctx.entrepriseFilieres.includes(prodFiliere)) return false
+      } else if (ctx.filiereActive !== 'toutes' && prodFiliere) {
+        if (prodFiliere !== ctx.filiereActive) return false
+      }
+      return f.tous === '1' || mesProduits.size === 0 || mesProduits.has(b.produit_id) || b.adresse_a_moi
+    })
     return (
       <>
         <PageHeader
@@ -112,7 +122,9 @@ export default async function BesoinsPage({ searchParams }: { searchParams: Prom
   const filiereCible = ctx.filiereActive
   const tousBesoins = data ?? []
   const besoins = filiereCible === 'toutes'
-    ? tousBesoins
+    ? (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0
+        ? tousBesoins.filter((b) => b.produits && ctx.entrepriseFilieres!.includes(determinerFiliere(b.produits)))
+        : tousBesoins)
     : tousBesoins.filter((b) => b.produits && determinerFiliere(b.produits) === filiereCible)
 
   return (

@@ -211,7 +211,11 @@ export async function donneesTableauDeBord(ctx: Contexte): Promise<{ tuiles: Tui
   ])
 
   const aTraiter = ctx.filiereActive === 'toutes'
-    ? (aTraiterData ?? [])
+    ? (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0
+        ? (aTraiterData ?? []).filter((c) =>
+            c.lignes_commande?.some((lc) => ctx.entrepriseFilieres!.includes(determinerFiliere(lc.produits)))
+          )
+        : (aTraiterData ?? []))
     : (aTraiterData ?? []).filter((c) =>
         c.lignes_commande?.some((lc) => determinerFiliere(lc.produits) === ctx.filiereActive)
       )

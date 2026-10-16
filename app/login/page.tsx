@@ -5,6 +5,7 @@ import { EcranAuth } from '@/components/EcranAuth'
 import { demoActive } from '@/lib/demo'
 import { FormulaireAuth } from '@/components/FormulaireAuth'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import { Label } from '@/components/ui/label'
 import { signIn } from '@/app/auth/actions'
 
@@ -45,7 +46,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               Mot de passe oublié ?
             </Link>
           </div>
-          <Input id="password" name="password" type="password" required autoComplete="current-password" className="h-11" />
+          <PasswordInput id="password" name="password" required autoComplete="current-password" className="h-11" />
         </div>
       </FormulaireAuth>
       <p className="mt-6 text-sm text-foreground-muted">

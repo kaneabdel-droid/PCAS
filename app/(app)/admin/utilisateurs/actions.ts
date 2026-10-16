@@ -7,7 +7,8 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { estAdmin } from '@/lib/admin'
 import { refusDemo } from '@/lib/demo'
 import { coche, messageErreur, requis, texte, type Resultat } from '@/lib/formulaire'
-import { ROLES_PLATEFORME, estRoleBase } from '@/lib/roles'
+import { envoyerEmailInvitation, envoyerEmailReinitialisation } from '@/lib/emails'
+import { LIBELLES_ROLES, ROLES_PLATEFORME, estRoleBase, type RoleBase } from '@/lib/roles'
 import { getContexte } from '@/lib/session'
 
 const site = () => process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
@@ -18,9 +19,9 @@ function rafraichir(entrepriseId?: string | null) {
 }
 
 /**
- * Invitation d'un nouvel utilisateur : compte d'authentification créé par Supabase (email d'invitation avec lien pour
- * choisir son mot de passe), puis fiche utilisateur enregistrée avec la session de l'administrateur (tracée dans le
- * journal). Si la fiche est refusée (rôle incompatible avec l'entreprise…), le compte d'authentification est supprimé.
+ * Invitation d'un nouvel utilisateur : compte d'authentification créé par Supabase (sans dépendre d'un SMTP externe),
+ * génération sécurisée du lien d'activation avec jeton vérifié par /auth/confirm, envoi de l'invitation par email (Resend),
+ * puis fiche utilisateur enregistrée avec la session de l'administrateur (tracée dans le journal).
  */
 export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
@@ -40,20 +41,69 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
   const filiere = (role === 'superviseur' || role === 'administrateur') && filiereBrute ? filiereBrute : null
 
   const admin = createAdminClient()
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { nom_complet: nomComplet },
-    redirectTo: `${site()}/auth/confirm?next=/auth/nouveau-mot-de-passe`,
+  const siteUrl = site()
+  const redirectTo = `${siteUrl}/auth/confirm?next=/auth/nouveau-mot-de-passe`
+
+  let userId: string | null = null
+  let lienActivation: string | null = null
+
+  // 1. Tenter la génération d'un lien d'invitation (crée le compte dans auth.users sans dépendre du SMTP Supabase)
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: {
+      data: { nom_complet: nomComplet },
+      redirectTo,
+    },
   })
-  if (error) {
-    if (/already been registered|already registered|exists/i.test(error.message)) {
+
+  if (!linkError && linkData?.user) {
+    userId = linkData.user.id
+    if (linkData.properties?.hashed_token) {
+      lienActivation = `${siteUrl}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=invite&next=/auth/nouveau-mot-de-passe`
+    } else {
+      lienActivation = linkData.properties?.action_link ?? null
+    }
+  } else {
+    // Si l'utilisateur existe déjà
+    if (linkError && /already been registered|already registered|exists/i.test(linkError.message)) {
       return { error: 'Un compte existe déjà avec cette adresse email.' }
     }
-    return { error: `Envoi de l’invitation impossible : ${error.message}` }
+
+    // Repli : créer le compte directement, puis générer le lien de récupération / activation
+    const { data: createData, error: createError } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: { nom_complet: nomComplet },
+    })
+
+    if (createError) {
+      if (/already been registered|already registered|exists/i.test(createError.message)) {
+        return { error: 'Un compte existe déjà avec cette adresse email.' }
+      }
+      return { error: `Création du compte impossible : ${createError.message}` }
+    }
+
+    userId = createData.user.id
+    const { data: recData } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo },
+    })
+    if (recData?.properties?.hashed_token) {
+      lienActivation = `${siteUrl}/auth/confirm?token_hash=${recData.properties.hashed_token}&type=recovery&next=/auth/nouveau-mot-de-passe`
+    } else {
+      lienActivation = recData?.properties?.action_link ?? null
+    }
+  }
+
+  if (!userId) {
+    return { error: 'Impossible d’initialiser le compte d’accès.' }
   }
 
   const supabase = await createClient()
   const { error: erreurFiche } = await supabase.from('utilisateurs').insert({
-    id: data.user.id,
+    id: userId,
     email,
     nom_complet: nomComplet,
     telephone: texte(fd, 'telephone'),
@@ -65,13 +115,25 @@ export async function inviterUtilisateur(fd: FormData): Promise<Resultat> {
     signataire: !plateforme && coche(fd, 'signataire'),
   })
   if (erreurFiche) {
-    await admin.auth.admin.deleteUser(data.user.id)
+    await admin.auth.admin.deleteUser(userId)
     return { error: messageErreur(erreurFiche, 'Enregistrement de l’utilisateur impossible.') }
+  }
+
+  // Envoi de l'invitation par email (via Resend)
+  if (lienActivation) {
+    const roleLibelle = LIBELLES_ROLES[role] ?? role
+    await envoyerEmailInvitation({
+      email,
+      nomComplet,
+      roleLibelle,
+      lienActivation,
+    })
   }
 
   rafraichir(entrepriseId)
   redirect(entrepriseId ? `/admin/entreprises/${entrepriseId}?onglet=utilisateurs` : '/admin/utilisateurs')
 }
+
 
 export async function modifierUtilisateur(fd: FormData): Promise<Resultat> {
   if (!(await estAdmin())) return { error: 'Réservé à l’administrateur.' }
@@ -140,19 +202,78 @@ export async function renvoyerLien(fd: FormData): Promise<Resultat> {
   const { data, error } = await admin.auth.admin.getUserById(id)
   if (error || !data.user?.email) return { error: 'Compte introuvable.' }
 
+  const email = data.user.email
+  const siteUrl = site()
+  const redirectTo = `${siteUrl}/auth/confirm?next=/auth/nouveau-mot-de-passe`
+
+  // 1. Si l'utilisateur ne s'est jamais connecté : invitation / activation
   if (!data.user.last_sign_in_at) {
-    const { error: e } = await admin.auth.admin.inviteUserByEmail(data.user.email, {
-      redirectTo: `${site()}/auth/confirm?next=/auth/nouveau-mot-de-passe`,
+    const { data: linkData } = await admin.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: { redirectTo },
     })
-    if (e) return { error: `Renvoi de l’invitation impossible : ${e.message}` }
-    return { success: `Invitation renvoyée à ${data.user.email}.` }
+
+    let lien = linkData?.properties?.hashed_token
+      ? `${siteUrl}/auth/confirm?token_hash=${linkData.properties.hashed_token}&type=invite&next=/auth/nouveau-mot-de-passe`
+      : linkData?.properties?.action_link ?? null
+
+    if (!lien) {
+      const { data: recData } = await admin.auth.admin.generateLink({
+        type: 'recovery',
+        email,
+        options: { redirectTo },
+      })
+      lien = recData?.properties?.hashed_token
+        ? `${siteUrl}/auth/confirm?token_hash=${recData.properties.hashed_token}&type=recovery&next=/auth/nouveau-mot-de-passe`
+        : recData?.properties?.action_link ?? null
+    }
+
+    if (!lien) {
+      return { error: 'Génération du lien d’invitation impossible.' }
+    }
+
+    const { data: fiche } = await admin.from('utilisateurs').select('nom_complet, role_base').eq('id', id).maybeSingle()
+    const roleLibelle = fiche?.role_base ? LIBELLES_ROLES[fiche.role_base as RoleBase] : undefined
+    const emailRes = await envoyerEmailInvitation({
+      email,
+      nomComplet: fiche?.nom_complet ?? '',
+      roleLibelle,
+      lienActivation: lien,
+    })
+
+    if (!emailRes.ok) {
+      return { success: `Lien généré. Note : l’envoi par email a échoué (${emailRes.error}). Lien direct : ${lien}` }
+    }
+    return { success: `Invitation envoyée avec succès à ${email}.` }
   }
-  const supabase = await createClient()
-  const { error: e } = await supabase.auth.resetPasswordForEmail(data.user.email, {
-    redirectTo: `${site()}/auth/confirm?next=/auth/nouveau-mot-de-passe`,
+
+  // 2. Si le compte a déjà été activé : réinitialisation du mot de passe
+  const { data: recData, error: recErr } = await admin.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: { redirectTo },
   })
-  if (e) return { error: `Envoi du lien impossible : ${e.message}` }
-  return { success: `Lien de réinitialisation du mot de passe envoyé à ${data.user.email}.` }
+
+  const lien = recData?.properties?.hashed_token
+    ? `${siteUrl}/auth/confirm?token_hash=${recData.properties.hashed_token}&type=recovery&next=/auth/nouveau-mot-de-passe`
+    : recData?.properties?.action_link ?? null
+
+  if (recErr || !lien) {
+    return { error: `Génération du lien impossible : ${recErr?.message ?? 'Erreur inconnue'}` }
+  }
+
+  const { data: fiche } = await admin.from('utilisateurs').select('nom_complet').eq('id', id).maybeSingle()
+  const emailRes = await envoyerEmailReinitialisation({
+    email,
+    nomComplet: fiche?.nom_complet ?? '',
+    lienReinitialisation: lien,
+  })
+
+  if (!emailRes.ok) {
+    return { success: `Lien généré. Note : l’envoi par email a échoué (${emailRes.error}). Lien direct : ${lien}` }
+  }
+  return { success: `Lien de réinitialisation envoyé à ${email}.` }
 }
 
 export async function supprimerUtilisateur(fd: FormData): Promise<Resultat> {

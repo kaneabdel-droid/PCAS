@@ -28,12 +28,20 @@ export type Offre = {
 export const SELECT_OFFRE =
   'id, producteur_id, site_id, produit_id, disponibilite, date_disponibilite, date_fin_validite, prix_unitaire, quantite_offerte, quantite_reservee, quantite_min_commande, variete, calibre, qualite, conditionnement, description, photos, statut, publiee_le, created_at, produits(nom, unite, categorie, filiere), sites_production(nom, region)'
 
+import { getContexte } from '@/lib/session'
+
 /** Sites actifs et produits finis actifs du producteur connecté, pour le formulaire d'offre. */
 export async function optionsOffre() {
-  const supabase = await createClient()
+  const [supabase, ctx] = await Promise.all([createClient(), getContexte()])
+  let reqProduits = supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom')
+  if (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0) {
+    reqProduits = reqProduits.in('filiere', ctx.entrepriseFilieres)
+  } else if (ctx.filiereActive !== 'toutes') {
+    reqProduits = reqProduits.eq('filiere', ctx.filiereActive)
+  }
   const [{ data: sites }, { data: produits }] = await Promise.all([
     supabase.from('sites_production').select('id, nom').eq('actif', true).order('nom'),
-    supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom'),
+    reqProduits,
   ])
   return { sites: sites ?? [], produits: produits ?? [] }
 }

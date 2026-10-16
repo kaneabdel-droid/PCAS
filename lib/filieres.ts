@@ -177,27 +177,43 @@ export function determinerFiliere(produit?: { filiere?: string | null; categorie
   return filiereDeCategorie(produit.categorie)
 }
 
-/** Résout la filière active selon l'utilisateur, les filières activées par l'admin et le cookie */
+/** Résout la filière active selon l'utilisateur, son entreprise, les filières activées par l'admin et le cookie */
 export function resoudreFiliereActive(
   cookieVal: string | undefined,
   filieresActivesPlateforme: FiliereCode[],
-  userFiliere?: FiliereCode | null
+  userFiliere?: FiliereCode | null,
+  entrepriseFilieres?: FiliereCode[] | null
 ): FiliereFiltre {
   // 1. Si l'utilisateur est un superviseur dédié à une filière spécifique, il est strictement verrouillé dessus
   if (userFiliere && filieresActivesPlateforme.includes(userFiliere)) {
     return userFiliere
   }
 
-  // 2. Si une seule filière est activée sur la plateforme par le SuperAdmin, la plateforme entière s'y consacre
+  // 2. Si l'utilisateur appartient à une entreprise dont les filières sont définies :
+  // L'entreprise est dirigée exclusivement dans sa ou ses filières d'appartenance, et verrouillée sur le reste.
+  if (entrepriseFilieres && entrepriseFilieres.length > 0) {
+    const autorisees = entrepriseFilieres.filter((f) => filieresActivesPlateforme.includes(f))
+    if (autorisees.length === 1 && autorisees[0]) {
+      return autorisees[0]
+    }
+    if (autorisees.length > 1) {
+      if (cookieVal && estFiliereCode(cookieVal) && autorisees.includes(cookieVal)) {
+        return cookieVal
+      }
+      return autorisees[0]!
+    }
+  }
+
+  // 3. Si une seule filière est activée sur la plateforme par le SuperAdmin, la plateforme entière s'y consacre
   if (filieresActivesPlateforme.length === 1 && filieresActivesPlateforme[0]) {
     return filieresActivesPlateforme[0]
   }
 
-  // 3. Si le cookie indique une filière valide parmi celles activées
+  // 4. Si le cookie indique une filière valide parmi celles activées
   if (cookieVal && estFiliereCode(cookieVal) && filieresActivesPlateforme.includes(cookieVal)) {
     return cookieVal
   }
 
-  // 4. Par défaut : vue globale consolidée
+  // 5. Par défaut pour les administrateurs et superviseurs globaux : vue consolidée
   return 'toutes'
 }

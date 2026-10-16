@@ -18,11 +18,13 @@ export function HubFilieres({
   filiereActive,
   filieresActivesPlateforme,
   userFiliere,
+  entrepriseFilieres,
   role,
 }: {
   filiereActive: FiliereFiltre
   filieresActivesPlateforme: FiliereCode[]
   userFiliere?: FiliereCode | null
+  entrepriseFilieres?: FiliereCode[] | null
   role: string
 }) {
   const [isPending, startTransition] = useTransition()
@@ -39,8 +41,14 @@ export function HubFilieres({
     return null
   }
 
-  // Si une seule filière est activée sur la plateforme, pas besoin de présenter le hub multi-filières
-  if (filieresActivesPlateforme.length <= 1) {
+  // Détermination des filières autorisées pour l'utilisateur
+  const estRestreintEntreprise = Boolean(entrepriseFilieres && entrepriseFilieres.length > 0)
+  const filieresAffichees = estRestreintEntreprise
+    ? (entrepriseFilieres ?? []).filter((c) => filieresActivesPlateforme.includes(c))
+    : filieresActivesPlateforme
+
+  // Si une seule filière est accessible (plateforme ou entreprise mono-filière), pas de hub de bascule
+  if (filieresAffichees.length <= 1) {
     return null
   }
 
@@ -50,10 +58,10 @@ export function HubFilieres({
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-accent" aria-hidden />
           <h2 className="font-heading text-base font-bold text-foreground">
-            Filières Agricoles PCAS
+            {estRestreintEntreprise ? 'Vos filières d’activité' : 'Filières Agricoles PCAS'}
           </h2>
         </div>
-        {filiereActive !== 'toutes' && (
+        {!estRestreintEntreprise && filiereActive !== 'toutes' && (
           <button
             type="button"
             onClick={() => handleBasculer('toutes')}
@@ -66,7 +74,7 @@ export function HubFilieres({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filieresActivesPlateforme.map((code) => {
+        {filieresAffichees.map((code) => {
           const f = FILIERES[code]
           const Icone = ICONES[code]
           const estActif = filiereActive === code

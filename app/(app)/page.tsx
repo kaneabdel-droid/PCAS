@@ -56,6 +56,7 @@ export default async function TableauDeBordPage() {
           filiereActive={ctx.filiereActive}
           filieresActivesPlateforme={ctx.filieresActivesPlateforme}
           userFiliere={ctx.filiere}
+          entrepriseFilieres={ctx.entrepriseFilieres}
           role={ctx.role}
         />
         <Tuiles tuiles={tuiles} />

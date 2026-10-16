@@ -16,6 +16,7 @@ export type Contexte = {
   entrepriseId: string | null
   entrepriseNom: string | null
   entrepriseType: TypeEntreprise | null
+  entrepriseFilieres: FiliereCode[] | null
   filiere: FiliereCode | null
   filiereActive: FiliereFiltre
   filieresActivesPlateforme: FiliereCode[]
@@ -27,7 +28,7 @@ type LigneUtilisateur = {
   actif: boolean
   entreprise_id: string | null
   filiere?: string | null
-  entreprises: { denomination: string; type: TypeEntreprise; statut: string } | null
+  entreprises: { denomination: string; type: TypeEntreprise; statut: string; filieres?: FiliereCode[] | null } | null
   profils: { libelle: string; role_base: string; matrice_permissions: Matrice; actif: boolean } | null
 }
 
@@ -43,7 +44,7 @@ export const getContexte = cache(async (): Promise<Contexte> => {
     supabase
       .from('utilisateurs')
       .select(
-        'nom_complet, role_base, actif, entreprise_id, filiere, entreprises(denomination, type, statut), profils(libelle, role_base, matrice_permissions, actif)'
+        'nom_complet, role_base, actif, entreprise_id, filiere, entreprises(denomination, type, statut, filieres), profils(libelle, role_base, matrice_permissions, actif)'
       )
       .eq('id', sub)
       .maybeSingle<LigneUtilisateur>(),
@@ -67,8 +68,13 @@ export const getContexte = cache(async (): Promise<Contexte> => {
     ? (parametres.filieres_actives as FiliereCode[])
     : ['cereale', 'maraichage', 'fruitier']
   const userFiliere: FiliereCode | null = estFiliereCode(data.filiere) ? data.filiere : null
+  const entrepriseFilieres: FiliereCode[] | null =
+    Array.isArray(data.entreprises?.filieres) && data.entreprises.filieres.length > 0
+      ? (data.entreprises.filieres.filter(estFiliereCode) as FiliereCode[])
+      : null
+
   const cookieVal = cookieStore.get(COOKIE_FILIERE)?.value
-  const filiereActive = resoudreFiliereActive(cookieVal, filieresActives, userFiliere)
+  const filiereActive = resoudreFiliereActive(cookieVal, filieresActives, userFiliere, entrepriseFilieres)
 
   return {
     userId: sub,
@@ -80,6 +86,7 @@ export const getContexte = cache(async (): Promise<Contexte> => {
     entrepriseId: data.entreprise_id,
     entrepriseNom: data.entreprises?.denomination ?? null,
     entrepriseType: data.entreprises?.type ?? null,
+    entrepriseFilieres,
     filiere: userFiliere,
     filiereActive,
     filieresActivesPlateforme: filieresActives,

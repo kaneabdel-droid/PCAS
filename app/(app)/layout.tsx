@@ -38,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       filiereActive={ctx.filiereActive}
       filieresActivesPlateforme={ctx.filieresActivesPlateforme}
       userFiliere={ctx.filiere}
+      entrepriseFilieres={ctx.entrepriseFilieres}
     >
       <EnregistrementPush />
       {demoActive() && estCompteDemo(ctx.email) && (

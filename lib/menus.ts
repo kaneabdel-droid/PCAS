@@ -78,6 +78,7 @@ export const MENUS: GroupeMenu[] = [
     titre: 'Administration',
     items: [
       { href: '/admin/entreprises', label: 'Entreprises', roles: ['administrateur'] },
+      { href: '/admin/import', label: 'Importation des données', roles: ['administrateur'] },
       { href: '/admin/utilisateurs', label: 'Utilisateurs', roles: ['administrateur'] },
       { href: '/admin/demandes', label: 'Demandes d’accès', roles: ['administrateur'] },
       { href: '/admin/profils', label: 'Profils', roles: ['administrateur'] },

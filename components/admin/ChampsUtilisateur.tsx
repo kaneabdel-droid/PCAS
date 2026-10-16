@@ -117,13 +117,35 @@ export function ChampsUtilisateur({
           </Select>
         </Champ>
       )}
-      {role !== '' && (
-        <Champ id="profil_id" label="Profil" aide="Facultatif : un profil personnalisé restreint les droits du rôle.">
+      {role !== '' && profilsPossibles.length === 0 && (
+        <Champ
+          id="profil_id"
+          label="Profil de permissions"
+          aide="Par défaut, l’utilisateur bénéficie de tous les droits et accès normaux de son rôle. Vous pouvez créer des profils de permissions personnalisés dans Administration > Profils si vous souhaitez restreindre certains droits."
+        >
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-surface-border bg-surface-muted/40 px-3.5 py-2.5 text-sm text-foreground">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                Droits complets
+              </span>
+              <span className="font-medium text-foreground">Standard (tous les droits du rôle)</span>
+            </div>
+            <span className="text-xs text-foreground-muted hidden sm:inline">Aucune restriction</span>
+          </div>
+          <input type="hidden" id="profil_id" name="profil_id" value="" />
+        </Champ>
+      )}
+      {role !== '' && profilsPossibles.length > 0 && (
+        <Champ
+          id="profil_id"
+          label="Profil de permissions"
+          aide="Facultatif : sélectionnez un profil pour restreindre les droits de cet utilisateur, ou conservez Standard pour lui accorder tous les droits normaux."
+        >
           <Select id="profil_id" name="profil_id" defaultValue={valeurs?.profil_id ?? ''} key={`p-${role}`}>
-            <option value="">Aucun (tous les droits du rôle)</option>
+            <option value="">Standard — Tous les droits du rôle (recommandé)</option>
             {profilsPossibles.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.libelle}
+                {p.libelle} (droits restreints)
               </option>
             ))}
           </Select>

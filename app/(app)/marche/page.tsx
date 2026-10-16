@@ -40,9 +40,16 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
         ? requete.order('date_disponibilite', { ascending: true, nullsFirst: true })
         : requete.order('publiee_le', { ascending: false })
 
+  let requeteProduits = supabase.from('produits').select('id, nom, filiere').eq('nature', 'produit_fini').eq('actif', true).order('nom')
+  if (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0) {
+    requeteProduits = requeteProduits.in('filiere', ctx.entrepriseFilieres)
+  } else if (ctx.filiereActive !== 'toutes') {
+    requeteProduits = requeteProduits.eq('filiere', ctx.filiereActive)
+  }
+
   const [{ data }, { data: produits }, { count: nbPanier }, { categories }] = await Promise.all([
     requete.limit(200),
-    supabase.from('produits').select('id, nom').eq('nature', 'produit_fini').eq('actif', true).order('nom'),
+    requeteProduits,
     ctx.role === 'client'
       ? supabase.from('paniers').select('offre_id', { count: 'exact', head: true })
       : Promise.resolve({ count: 0 }),
@@ -52,7 +59,9 @@ export default async function MarchePage({ searchParams }: { searchParams: Promi
   const filiereCible = ctx.filiereActive
   const toutesOffres = (data ?? []) as unknown as OffreMarche[]
   const offres = filiereCible === 'toutes'
-    ? toutesOffres
+    ? (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0
+        ? toutesOffres.filter((o) => ctx.entrepriseFilieres!.includes(filiereDeCategorie(o.categorie)))
+        : toutesOffres)
     : toutesOffres.filter((o) => filiereDeCategorie(o.categorie) === filiereCible)
 
   return (

@@ -90,12 +90,22 @@ export async function PageStocks({
   if (filtres.du) requeteMouvements = requeteMouvements.gte('date_mouvement', filtres.du)
   if (filtres.au) requeteMouvements = requeteMouvements.lte('date_mouvement', filtres.au)
 
+  let reqProduits = supabase.from('produits').select('id, nom, unite, filiere').eq('nature', nature).eq('actif', true).order('nom')
+  let reqFinis = supabase.from('produits').select('id, nom, unite, filiere').eq('nature', 'produit_fini').eq('actif', true).order('nom')
+  if (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0) {
+    reqProduits = reqProduits.in('filiere', ctx.entrepriseFilieres)
+    reqFinis = reqFinis.in('filiere', ctx.entrepriseFilieres)
+  } else if (ctx.filiereActive !== 'toutes') {
+    reqProduits = reqProduits.eq('filiere', ctx.filiereActive)
+    reqFinis = reqFinis.eq('filiere', ctx.filiereActive)
+  }
+
   const [{ data: stocksData }, { data: mouvementsData }, { data: sitesData }, { data: produitsData }, { data: producteursData }, { data: rendementsData }, { data: finisData }] =
     await Promise.all([
       requeteStocks.returns<LigneStock[]>(),
       requeteMouvements.returns<Mouvement[]>(),
       supabase.from('sites_production').select('id, nom, actif').order('nom'),
-      supabase.from('produits').select('id, nom, unite').eq('nature', nature).eq('actif', true).order('nom'),
+      reqProduits,
       producteur
         ? Promise.resolve({ data: [] as { id: string; denomination: string }[] })
         : supabase.from('entreprises').select('id, denomination').eq('type', 'producteur').order('denomination'),
@@ -103,14 +113,16 @@ export async function PageStocks({
         ? supabase.from('transformations').select('matiere_id, produit_id, rendement')
         : Promise.resolve({ data: [] as { matiere_id: string; produit_id: string; rendement: number }[] }),
       nature === 'matiere_premiere'
-        ? supabase.from('produits').select('id, nom, unite').eq('nature', 'produit_fini').eq('actif', true).order('nom')
+        ? reqFinis
         : Promise.resolve({ data: [] as { id: string; nom: string; unite: string }[] }),
     ])
 
   const filiereCible = ctx.filiereActive
   const tousStocks = stocksData ?? []
   const stocks = filiereCible === 'toutes'
-    ? tousStocks
+    ? (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0
+        ? tousStocks.filter((s) => ctx.entrepriseFilieres!.includes(determinerFiliere(s.produits)))
+        : tousStocks)
     : tousStocks.filter((s) => determinerFiliere(s.produits) === filiereCible)
   const mouvements = mouvementsData ?? []
   const produits = produitsData ?? []

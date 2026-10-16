@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { EcranAuth } from '@/components/EcranAuth'
 import { FormulaireAuth } from '@/components/FormulaireAuth'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/PasswordInput'
 import { Label } from '@/components/ui/label'
 import { definirMotDePasse } from '@/app/auth/actions'
 import { createClient } from '@/utils/supabase/server'
@@ -20,11 +20,11 @@ export default async function NouveauMotDePassePage() {
       <FormulaireAuth action={definirMotDePasse} libelle="Enregistrer et continuer">
         <div className="space-y-1.5">
           <Label htmlFor="password">Nouveau mot de passe</Label>
-          <Input id="password" name="password" type="password" required minLength={10} autoComplete="new-password" className="h-11" />
+          <PasswordInput id="password" name="password" required minLength={10} autoComplete="new-password" className="h-11" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="confirmation">Confirmation</Label>
-          <Input id="confirmation" name="confirmation" type="password" required minLength={10} autoComplete="new-password" className="h-11" />
+          <PasswordInput id="confirmation" name="confirmation" required minLength={10} autoComplete="new-password" className="h-11" />
         </div>
       </FormulaireAuth>
     </EcranAuth>

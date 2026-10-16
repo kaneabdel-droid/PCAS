@@ -53,7 +53,11 @@ export default async function CommandesPage({ searchParams }: { searchParams: Pr
   const filiereCible = ctx.filiereActive
   const toutesCommandes = data ?? []
   const commandes = filiereCible === 'toutes'
-    ? toutesCommandes
+    ? (ctx.entrepriseFilieres && ctx.entrepriseFilieres.length > 0
+        ? toutesCommandes.filter((c) =>
+            c.lignes_commande?.some((l) => ctx.entrepriseFilieres!.includes(determinerFiliere(l.produits)))
+          )
+        : toutesCommandes)
     : toutesCommandes.filter((c) =>
         c.lignes_commande?.some((l) => determinerFiliere(l.produits) === filiereCible)
       )

@@ -35,6 +35,7 @@ import {
   Sprout,
   Store,
   Truck,
+  UploadCloud,
   Users,
   Wheat,
   X,
@@ -72,6 +73,7 @@ const ICONES: Record<string, typeof LayoutDashboard> = {
   '/etats': Printer,
   '/entreprise': Building2,
   '/admin/entreprises': Building2,
+  '/admin/import': UploadCloud,
   '/admin/utilisateurs': Users,
   '/admin/profils': ShieldCheck,
   '/admin/produits': Sprout,
@@ -110,6 +112,7 @@ export function AppShell({
   filiereActive = 'toutes',
   filieresActivesPlateforme = ['cereale', 'maraichage', 'fruitier'],
   userFiliere = null,
+  entrepriseFilieres = null,
   children,
 }: {
   utilisateur: string
@@ -122,6 +125,7 @@ export function AppShell({
   filiereActive?: FiliereFiltre
   filieresActivesPlateforme?: FiliereCode[]
   userFiliere?: FiliereCode | null
+  entrepriseFilieres?: FiliereCode[] | null
   children: React.ReactNode
 }) {
   const [ouvert, setOuvert] = useState(false)
@@ -297,6 +301,7 @@ export function AppShell({
               filiereActive={filiereActive}
               filieresActivesPlateforme={filieresActivesPlateforme}
               userFiliere={userFiliere}
+              entrepriseFilieres={entrepriseFilieres}
               role={role}
             />
           </div>
@@ -330,13 +335,14 @@ export function AppShell({
           <Cloche key={nonLues} utilisateurId={utilisateurId} nonLues={nonLues} />
         </header>
 
-        {/* Mobile : barre de sélection de filière si multi-filières ou utilisateur dédié */}
-        {(filieresActivesPlateforme.length > 1 || userFiliere) && (
+        {/* Mobile : barre de sélection de filière si multi-filières, entreprise ou utilisateur dédié */}
+        {(filieresActivesPlateforme.length > 1 || userFiliere || (entrepriseFilieres && entrepriseFilieres.length > 0)) && (
           <div className="border-b border-surface-border bg-surface px-4 py-2 lg:hidden">
             <SelecteurFiliere
               filiereActive={filiereActive}
               filieresActivesPlateforme={filieresActivesPlateforme}
               userFiliere={userFiliere}
+              entrepriseFilieres={entrepriseFilieres}
               role={role}
             />
           </div>

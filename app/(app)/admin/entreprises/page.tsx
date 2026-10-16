@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/card'
 import { Badge, Vide } from '@/components/ui/champ'
 import { Input, Select } from '@/components/ui/input'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
+import { estFiliereCode, type FiliereCode } from '@/lib/filieres'
 import { LIBELLES_TYPES_ENTREPRISE, type TypeEntreprise } from '@/lib/roles'
 import { createClient } from '@/utils/supabase/server'
 
@@ -19,6 +21,7 @@ type Ligne = {
   identifiant_fiscal: string | null
   type_identifiant: string
   logo_path: string | null
+  filieres?: FiliereCode[] | null
   statut: 'actif' | 'suspendu'
   utilisateurs: { count: number }[]
 }
@@ -32,7 +35,7 @@ export default async function EntreprisesPage({
   const supabase = await createClient()
   let requete = supabase
     .from('entreprises')
-    .select('id, type, denomination, region, identifiant_fiscal, type_identifiant, logo_path, statut, utilisateurs(count)')
+    .select('id, type, denomination, region, identifiant_fiscal, type_identifiant, logo_path, filieres, statut, utilisateurs(count)')
     .order('denomination')
   if (q?.trim()) {
     const motif = `%${q.trim().replace(/[%_,()]/g, ' ')}%`
@@ -93,7 +96,14 @@ export default async function EntreprisesPage({
                       'Fiche à compléter'}
                   </p>
                 </div>
-                <div className="hidden flex-wrap justify-end gap-2 sm:flex">
+                <div className="hidden flex-wrap items-center justify-end gap-1.5 sm:flex">
+                  {Array.isArray(e.filieres) && e.filieres.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mr-1">
+                      {e.filieres.filter(estFiliereCode).map((f) => (
+                        <FiliereBadge key={f} filiere={f} taille="petite" court />
+                      ))}
+                    </div>
+                  )}
                   <Badge ton="primaire">{LIBELLES_TYPES_ENTREPRISE[e.type]}</Badge>
                   <Badge>
                     {e.utilisateurs[0]?.count ?? 0} utilisateur{(e.utilisateurs[0]?.count ?? 0) > 1 ? 's' : ''}

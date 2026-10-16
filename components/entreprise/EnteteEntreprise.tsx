@@ -1,9 +1,11 @@
 import { LogoEntreprise } from '@/components/entreprise/LogoEntreprise'
 import { Badge } from '@/components/ui/champ'
+import { FiliereBadge } from '@/components/filieres/FiliereBadge'
+import { estFiliereCode } from '@/lib/filieres'
 import { LIBELLES_TYPES_ENTREPRISE } from '@/lib/roles'
 import type { Entreprise } from '@/lib/entreprise'
 
-/** En-tête d'une fiche entreprise : logo, dénomination, type, statut, identifiant. */
+/** En-tête d'une fiche entreprise : logo, dénomination, type, statut, identifiant, filières. */
 export function EnteteEntreprise({ entreprise, children }: { entreprise: Entreprise; children?: React.ReactNode }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -13,6 +15,13 @@ export function EnteteEntreprise({ entreprise, children }: { entreprise: Entrepr
           <h1 className="truncate font-heading text-2xl font-semibold">{entreprise.denomination}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-foreground-muted">
             <Badge ton="primaire">{LIBELLES_TYPES_ENTREPRISE[entreprise.type]}</Badge>
+            {Array.isArray(entreprise.filieres) && entreprise.filieres.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {entreprise.filieres.filter(estFiliereCode).map((f) => (
+                  <FiliereBadge key={f} filiere={f} taille="petite" court />
+                ))}
+              </div>
+            )}
             {entreprise.statut === 'suspendu' && <Badge ton="danger">Suspendue</Badge>}
             {entreprise.identifiant_fiscal && (
               <span>
